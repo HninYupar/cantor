@@ -19,7 +19,7 @@
     <parent>
         <groupId>com.salesforce.cantor</groupId>
         <artifactId>cantor-parent</artifactId>
-        <version>0.5.23</version>
+        <version>0.5.23-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
