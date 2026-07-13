@@ -1,6 +1,8 @@
 package com.salesforce.cantor.integration;
 
 import com.salesforce.cantor.Cantor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.TestNG;
 
 /**
@@ -8,6 +10,8 @@ import org.testng.TestNG;
  * Usage: ./integration-test --type CantorOnH2
  */
 public class IntegrationTestRunner {
+
+    private static final Logger logger = LoggerFactory.getLogger(IntegrationTestRunner.class);
 
     public static void main(String[] args) {
 
@@ -25,9 +29,7 @@ public class IntegrationTestRunner {
         // so translate CantorOn<Version> -> <version> lowercased.
         final String storageType = toStorageType(version);
 
-        System.out.println("CANTOR INTEGRATION TEST HARNESS");
-        System.out.println("Version: " + version + " (storage type: " + storageType + ")");
-        System.out.println();
+        logger.info("CANTOR INTEGRATION TEST on {}", storageType);
 
         // Start server
         ServerManager serverManager = new ServerManager(storageType);
@@ -36,7 +38,7 @@ public class IntegrationTestRunner {
             Cantor client = serverManager.getClient();
 
             // Run tests
-            System.out.println("Running tests");
+            logger.info("Running tests...");
 
             // The test classes live in src/test/java, which the main source set
             // cannot reference at compile time. Load them by name at runtime
@@ -56,22 +58,37 @@ public class IntegrationTestRunner {
                 testClasses[i] = testClass;
             }
 
+            TimingListener timingListener = new TimingListener();
+
             TestNG testng = new TestNG();
             testng.setTestClasses(testClasses);
+            testng.addListener(timingListener);
             testng.run();
 
+            // Print timing report
             System.out.println();
-            System.out.println("All tests completed.");
+            System.out.println("=== TIMING REPORT ===");
+            System.out.println(String.format("%-30s %-35s %10s %6s", "Class", "Method", "Duration", "Status"));
+            System.out.println("-".repeat(85));
+            long totalMs = 0;
+            for (TimingListener.TestTiming t : timingListener.getResults()) {
+                System.out.println(String.format("%-30s %-35s %8dms %6s",
+                        t.getClassName(), t.getMethodName(), t.getDurationMs(), t.getStatus()));
+                totalMs += t.getDurationMs();
+            }
+            System.out.println("-".repeat(85));
+            System.out.println(String.format("%-67s %8dms", "TOTAL", totalMs));
+            System.out.println();
+            logger.info("All tests completed.");
 
         } catch (Exception e) {
-            System.err.println("ERROR: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("ERROR: {}", e.getMessage(), e);
         } finally {
             // Always tear down, even if tests fail
             serverManager.stop();
         }
 
-        System.out.println("Done.");
+        logger.info("Done.");
 
         // Force the JVM to exit. The gRPC client (CantorOnGrpc) starts a
         // background channel-refresh thread that has no public shutdown hook,

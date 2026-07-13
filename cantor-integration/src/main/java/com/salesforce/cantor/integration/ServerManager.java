@@ -7,6 +7,8 @@ import com.salesforce.cantor.server.grpc.GrpcServer;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -15,6 +17,8 @@ import java.io.IOException;
  * Starts the server, provides a client, and shuts down when done.
  */
 public class ServerManager {
+
+    private static final Logger logger = LoggerFactory.getLogger(ServerManager.class);
 
     private int port;
     private final String storageType;
@@ -32,9 +36,8 @@ public class ServerManager {
         Config config = ConfigFactory.load("cantor-server")
                 .withValue("cantor.storage.type", ConfigValueFactory.fromAnyRef(storageType));
 
-
         this.port = config.getInt("cantor.grpc.port");
-        System.out.println("Starting Cantor server on port " + port + " with backend: " + storageType);
+        logger.info("Starting Cantor server on port {} with backend: {}", port, storageType);
 
         CantorEnvironment environment = new CantorEnvironment(config);
         this.server = new GrpcServer(environment);
@@ -43,7 +46,7 @@ public class ServerManager {
         // Create the gRPC client pointing at the server
         this.client = new CantorOnGrpc("localhost:" + port);
 
-        System.out.println("Server started successfully.");
+        logger.info("Server started successfully.");
     }
 
     /**
@@ -57,10 +60,10 @@ public class ServerManager {
      * Shuts down the server.
      */
     public void stop() {
-        System.out.println("Shutting down server...");
+        logger.info("Shutting down server...");
         if (this.server != null) {
             this.server.shutdown();
         }
-        System.out.println("Server stopped.");
+        logger.info("Server stopped.");
     }
 }
