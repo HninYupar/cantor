@@ -31,6 +31,8 @@ public class IntegrationTestRunner {
 
         logger.info("CANTOR INTEGRATION TEST on {}", storageType);
 
+        int exitCode = 0;
+
         // Start server
         ServerManager serverManager = new ServerManager(storageType);
         try {
@@ -65,6 +67,10 @@ public class IntegrationTestRunner {
             testng.addListener(timingListener);
             testng.run();
 
+            if (testng.getStatus() != 0) {
+                exitCode = 1;
+            }
+
             // Print timing report
             System.out.println();
             System.out.println("=== TIMING REPORT ===");
@@ -89,6 +95,7 @@ public class IntegrationTestRunner {
 
         } catch (Exception e) {
             logger.error("ERROR: {}", e.getMessage(), e);
+            exitCode = 1;
         } finally {
             // Always tear down, even if tests fail
             serverManager.stop();
@@ -100,7 +107,7 @@ public class IntegrationTestRunner {
         // background channel-refresh thread that has no public shutdown hook,
         // so it keeps the process alive after main() returns. Since this is a
         // one-shot CLI tool, exit explicitly once teardown is complete.
-        System.exit(0);
+        System.exit(exitCode);
     }
 
     /**
