@@ -79,6 +79,12 @@ public class IntegrationTestRunner {
             System.out.println("-".repeat(85));
             System.out.println(String.format("%-67s %8dms", "TOTAL", totalMs));
             System.out.println();
+
+            // Generate a CSV report
+            final String reportPath = "cantor-integration/reports/" + version + ".csv";
+            CSVReporter.generate(reportPath, timingListener.getResults());
+            logger.info("CSV report generated at {}", reportPath);
+
             logger.info("All tests completed.");
 
         } catch (Exception e) {
