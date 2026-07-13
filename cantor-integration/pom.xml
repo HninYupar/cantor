@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>cantor-parent</artifactId>
+        <groupId>com.salesforce.cantor</groupId>
+        <version>0.5.25-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>cantor-integration</artifactId>
+    <name>cantor-integration</name>
+    <packaging>jar</packaging>
+
+    <description>Integration test harness for Cantor</description>
+
+    <dependencies>
+        <!--Cantor gRPC client-->
+        <dependency>
+            <groupId>com.salesforce.cantor</groupId>
+            <artifactId>cantor-grpc-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!--Cantor common test classes-->
+        <dependency>
+            <groupId>com.salesforce.cantor</groupId>
+            <artifactId>cantor-common</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+        </dependency>
+
+        <!--Cantor server-->
+        <dependency>
+            <groupId>com.salesforce.cantor</groupId>
+            <artifactId>cantor-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Test NG -->
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>${testng.version}</version>
+            <!-- Override the managed 'test' scope from the root pom:
+                 our IntegrationTestRunner lives in src/main/java and drives
+                 TestNG programmatically, so it must be on the compile classpath. -->
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+</project>

@@ -2,6 +2,9 @@
 target/
 logs
 
+# TestNG report output (regenerated on every run)
+test-output/
+
 # Package Files #
 *.war
 *.ear

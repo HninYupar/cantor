@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#
+# Cantor integration test harness launcher.
+#
+# Usage:
+#   ./integration-test --type CantorOnH2
+#   ./integration-test --type CantorOnMySQL
+#   ./integration-test --type CantorOnS3
+#
+# Spins up a Cantor server with the requested backend, runs the
+# Cantor test suite against it over gRPC, then tears the server down.
+
+set -euo pipefail
+
+# Resolve the repo root (the directory this script lives in) so the command
+# works no matter where you invoke it from.
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Prefer a Maven on PATH; fall back to the Homebrew location.
+if command -v mvn >/dev/null 2>&1; then
+    MVN="mvn"
+elif [ -x "/opt/homebrew/bin/mvn" ]; then
+    MVN="/opt/homebrew/bin/mvn"
+else
+    echo "ERROR: could not find 'mvn' on PATH or at /opt/homebrew/bin/mvn" >&2
+    exit 1
+fi
+
+# Forward every argument the user typed straight through to the harness.
+# "$*" joins them with spaces, which is what exec.args expects.
+EXEC_ARGS="$*"
+
+"${MVN}" -q -pl cantor-integration test-compile exec:java \
+    -f "${REPO_ROOT}/pom.xml" \
+    -Dexec.mainClass="com.salesforce.cantor.integration.IntegrationTestRunner" \
+    -Dexec.args="${EXEC_ARGS}" \
+    -Dexec.classpathScope=test \
+    -Dgpg.skip=true

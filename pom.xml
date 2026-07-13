@@ -119,6 +119,7 @@
         <module>cantor-metrics</module>
         <module>cantor-server</module>
         <module>cantor-http-server</module>
+        <module>cantor-integration</module>
     </modules>
 
     <dependencyManagement>
