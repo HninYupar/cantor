@@ -5,6 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.TestNG;
 
+import java.util.*;
+
+
 /**
  * Integration test harness for Cantor.
  * Usage: ./integration-test --type CantorOnH2
@@ -71,25 +74,25 @@ public class IntegrationTestRunner {
                 exitCode = 1;
             }
 
-            // Print timing report
-            System.out.println();
-            System.out.println("=== TIMING REPORT ===");
-            System.out.println(String.format("%-30s %-35s %10s %6s", "Class", "Method", "Duration", "Status"));
-            System.out.println("-".repeat(85));
-            long totalMs = 0;
+            Map<String, List<Long>> methods = new LinkedHashMap<>();
             for (TimingListener.TestTiming t : timingListener.getResults()) {
-                System.out.println(String.format("%-30s %-35s %8dms %6s",
-                        t.getClassName(), t.getMethodName(), t.getDurationMs(), t.getStatus()));
-                totalMs += t.getDurationMs();
+                String key = t.getClassName() + "." + t.getMethodName();
+                List<Long> values = methods.get(key);
+                if (values == null) {
+                    values = new ArrayList<>();
+                    methods.put(key, values);
+                }
+                values.add(t.getDurationMs());
             }
-            System.out.println("-".repeat(85));
-            System.out.println(String.format("%-67s %8dms", "TOTAL", totalMs));
-            System.out.println();
 
-            // Generate a CSV report
+            List<BenchmarkStats> stats = new ArrayList<>();
+            for (Map.Entry<String, List<Long>> e : methods.entrySet()) {
+                stats.add(new BenchmarkStats(e.getKey(), e.getValue()));
+            }
+
             final String reportPath = "cantor-integration/reports/" + version + ".csv";
-            CSVReporter.generate(reportPath, timingListener.getResults());
-            logger.info("CSV report generated at {}", reportPath);
+            CSVReporter.generate(reportPath, stats);
+            logger.info("Performance report generated at {}", reportPath);
 
             logger.info("All tests completed.");
 
@@ -97,16 +100,11 @@ public class IntegrationTestRunner {
             logger.error("ERROR: {}", e.getMessage(), e);
             exitCode = 1;
         } finally {
-            // Always tear down, even if tests fail
             serverManager.stop();
         }
 
         logger.info("Done.");
 
-        // Force the JVM to exit. The gRPC client (CantorOnGrpc) starts a
-        // background channel-refresh thread that has no public shutdown hook,
-        // so it keeps the process alive after main() returns. Since this is a
-        // one-shot CLI tool, exit explicitly once teardown is complete.
         System.exit(exitCode);
     }
 
