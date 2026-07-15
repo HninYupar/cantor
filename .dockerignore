@@ -1,0 +1,10 @@
+target/
+.git/
+.idea/
+*.iml
+test-output/
+cantor-integration/reports/
+logs/
+*.log
+*.db
+.DS_Store

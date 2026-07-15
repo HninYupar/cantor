@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  cantor-server:
+    build:
+      context: ../env/dockers/cantor
+      dockerfile: Dockerfile
+    container_name: cantor-server
+    ports:
+      - "7443:7443"
+    networks:
+      - cantor-network
+
+  cantor-client:
+    build:
+      context: ..
+      dockerfile: cantor-integration/Dockerfile
+    container_name: cantor-client
+    depends_on:
+      - cantor-server
+    environment:
+      - CANTOR_SERVER_HOST=cantor-server
+      - CANTOR_SERVER_PORT=7443
+    command: ["--type", "CantorOnH2"]
+    networks:
+      - cantor-network
+    volumes:
+      - ./reports:/cantor/cantor-integration/reports
+
+networks:
+  cantor-network:
+    driver: bridge

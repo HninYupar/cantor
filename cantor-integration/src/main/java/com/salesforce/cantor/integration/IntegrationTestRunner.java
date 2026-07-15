@@ -7,7 +7,6 @@ import org.testng.TestNG;
 
 import java.util.*;
 
-
 /**
  * Integration test harness for Cantor.
  * Usage: ./integration-test --type CantorOnH2
@@ -19,7 +18,6 @@ public class IntegrationTestRunner {
     public static void main(String[] args) {
 
         // Parse command-line arguments
-        // e.g. --type CantorOnH2 / CantorOnMysql / CantorOnS3
         String version = "CantorOnH2"; // default
 
         for (int i = 0; i < args.length; i++) {
@@ -32,14 +30,16 @@ public class IntegrationTestRunner {
         // so translate CantorOn<Version> -> <version> lowercased.
         final String storageType = toStorageType(version);
 
-        logger.info("CANTOR INTEGRATION TEST on {}", storageType);
-
         int exitCode = 0;
 
-        // Start server
-        ServerManager serverManager = new ServerManager(storageType);
+        logger.info("CANTOR INTEGRATION TEST on {}", storageType);
+
+        final String host = System.getenv("CANTOR_SERVER_HOST");
+        final int port = Integer.parseInt(System.getenv("CANTOR_SERVER_PORT"));
+
+        ServerManager serverManager = new ServerManager(host, port);
         try {
-            serverManager.start();
+            serverManager.connect();
             Cantor client = serverManager.getClient();
 
             // Run tests
@@ -99,8 +99,6 @@ public class IntegrationTestRunner {
         } catch (Exception e) {
             logger.error("ERROR: {}", e.getMessage(), e);
             exitCode = 1;
-        } finally {
-            serverManager.stop();
         }
 
         logger.info("Done.");
