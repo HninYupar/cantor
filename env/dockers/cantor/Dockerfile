@@ -1,4 +1,5 @@
-FROM centos:8
+#FROM centos:8
+FROM eclipse-temurin:17-jre
 
 ARG version
 ARG pipeline_args
@@ -12,7 +13,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN groupadd --system --gid 7447 cantor
 RUN adduser --system --gid 7447 --uid 7447 --shell /sbin/nologin cantor
 
-RUN yum install java -y
+# RUN yum install java -y
 
 # work in cantor home directory
 WORKDIR /home/cantor/
