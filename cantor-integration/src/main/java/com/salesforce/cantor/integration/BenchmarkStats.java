@@ -35,11 +35,11 @@ public class BenchmarkStats {
     }
 
     public long getMin() {
-        return durationsSorted.getFirst();
+        return durationsSorted.get(0);
     }
 
     public long getMax() {
-        return durationsSorted.getLast();
+        return durationsSorted.size() - 1;
     }
 
     public long calculatePercentile(final double percentile) {
