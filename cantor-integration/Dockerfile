@@ -14,7 +14,6 @@ COPY --chmod=755 <<'EOF' /entrypoint.sh
 #!/bin/sh
 echo "Waiting for server to start..."
 sleep 10
-echo "Running tests with args: $*"
 mvn -q -pl cantor-integration test-compile exec:java \
   -Dexec.mainClass=com.salesforce.cantor.integration.IntegrationTestRunner \
   -Dexec.args="$*" \
@@ -23,4 +22,3 @@ mvn -q -pl cantor-integration test-compile exec:java \
 EOF
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["--type", "CantorOnH2"]

@@ -7,8 +7,43 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Forward every argument the user typed to the test container
-EXEC_ARGS="$*"
+CONFIG_FILE=""
+TYPE=""
+STORAGE=""
+
+# Parse both --config and --type flags
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --config)
+            CONFIG_FILE="$2"
+            shift 2
+            ;;
+        --type)
+            TYPE="$2"
+            shift 2
+            ;;
+    esac
+done
+
+# Use default config if not provided
+if [ -z "$CONFIG_FILE" ]; then
+    CONFIG_FILE="${REPO_ROOT}/env/dockers/cantor/cantor-server.conf"
+fi
+
+if [ "${TYPE}" == "CantorOnH2" ]; then
+    STORAGE="h2"
+elif [ "${TYPE}" == "CantorOnMySQL" ]; then
+    STORAGE="mysql"
+elif [ "${TYPE}" == "CantorOnS3" ]; then
+    STORAGE="s3"
+fi
+
+echo "Using config: $CONFIG_FILE"
+echo "Using Storage: $STORAGE"
+
+# Export config path and storage type
+export CANTOR_CONFIG_FILE="$CONFIG_FILE"
+export CANTOR_STORAGE_TYPE="$STORAGE"
 
 # Build cantor-server jar if it doesn't exist
 SERVER_JAR="${REPO_ROOT}/env/dockers/cantor/cantor-server.jar"
@@ -23,7 +58,7 @@ if [ ! -f "${SERVER_JAR}" ]; then
 fi
 
 cd "${REPO_ROOT}/cantor-integration"
-docker-compose run --build cantor-client ${EXEC_ARGS}
+docker-compose run --rm --build cantor-client --type ${TYPE}
 
 EXIT_CODE=$?
 

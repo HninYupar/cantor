@@ -10,6 +10,10 @@ services:
       - "7443:7443"
     networks:
       - cantor-network
+    volumes:
+      - ${CANTOR_CONFIG_FILE:-../env/dockers/cantor/cantor-server.conf}:/home/cantor/cantor-server.conf:ro
+    environment:
+      - CANTOR_STORAGE_TYPE=${CANTOR_STORAGE_TYPE}
 
   cantor-client:
     build:
@@ -21,7 +25,6 @@ services:
     environment:
       - CANTOR_SERVER_HOST=cantor-server
       - CANTOR_SERVER_PORT=7443
-    command: ["--type", "CantorOnH2"]
     networks:
       - cantor-network
     volumes:

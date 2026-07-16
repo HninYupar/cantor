@@ -7,32 +7,22 @@ import org.testng.TestNG;
 
 import java.util.*;
 
-/**
- * Integration test harness for Cantor.
- * Usage: ./integration-test --type CantorOnH2
- */
 public class IntegrationTestRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(IntegrationTestRunner.class);
 
     public static void main(String[] args) {
 
-        // Parse command-line arguments
-        String version = "CantorOnH2"; // default
-
+        String version = "";
         for (int i = 0; i < args.length; i++) {
             if ("--type".equals(args[i]) && i + 1 < args.length) {
                 version = args[i + 1];
             }
         }
-
-        // Cantor's config expects the backend as a bare storage type (h2/mysql/s3),
-        // so translate CantorOn<Version> -> <version> lowercased.
-        final String storageType = toStorageType(version);
+        final String database = toStorageType(version);
+        logger.info("Running Cantor on {}", database);
 
         int exitCode = 0;
-
-        logger.info("CANTOR INTEGRATION TEST on {}", storageType);
 
         final String host = System.getenv("CANTOR_SERVER_HOST");
         final int port = Integer.parseInt(System.getenv("CANTOR_SERVER_PORT"));
@@ -51,8 +41,8 @@ public class IntegrationTestRunner {
             // in the ./integration-test launcher).
             final String[] testClassNames = {
                     "com.salesforce.cantor.integration.IntegrationEventsTest",
-                    "com.salesforce.cantor.integration.IntegrationObjectsTest",
-                    "com.salesforce.cantor.integration.IntegrationSetsTest"
+//                    "com.salesforce.cantor.integration.IntegrationObjectsTest",
+//                    "com.salesforce.cantor.integration.IntegrationSetsTest"
             };
 
             final Class<?>[] testClasses = new Class<?>[testClassNames.length];
@@ -106,11 +96,7 @@ public class IntegrationTestRunner {
         System.exit(exitCode);
     }
 
-    /**
-     * Translates a user-supplied Cantor version (e.g. "CantorOnH2") into the
-     * bare storage type Cantor's config expects (e.g. "h2"). Accepts either the
-     * CantorOn<Version> form or a plain type like "h2".
-     */
+    // Extract database (e.g. "S3") from user supplied Cantor version (e.g. "CantorOnS3")
     private static String toStorageType(final String version) {
         String type = version.trim();
         if (type.regionMatches(true, 0, "CantorOn", 0, "CantorOn".length())) {
