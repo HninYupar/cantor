@@ -39,7 +39,7 @@ public class BenchmarkStats {
     }
 
     public long getMax() {
-        return durationsSorted.size() - 1;
+        return durationsSorted.get(durationsSorted.size() - 1);
     }
 
     public long calculatePercentile(final double percentile) {
