@@ -1,14 +1,17 @@
 package com.salesforce.cantor.integration;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
 import java.util.*;
 
-/**
- * TestNG listener that records the duration of each test method.
- */
+// Records the duration of each test method.
+
 public class TimingListener implements ITestListener {
+
+    private static final Logger logger = LoggerFactory.getLogger(TimingListener.class);
 
     private final List<TestTiming> results = new ArrayList<>();
 
@@ -20,6 +23,10 @@ public class TimingListener implements ITestListener {
     @Override
     public void onTestFailure(ITestResult result) {
         record(result, "FAIL");
+        logger.error("TEST FAILED: {}.{}",
+                result.getTestClass().getRealClass().getSimpleName(),
+                result.getMethod().getMethodName(),
+                result.getThrowable());
     }
 
     @Override

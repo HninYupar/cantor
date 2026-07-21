@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-# Usage:  ./integration-test --type <CantorVersion>
 # Spins up a Cantor server with the requested backend via Docker, runs tests and tears down.
 
 set -euo pipefail
@@ -11,7 +10,6 @@ CONFIG_FILE=""
 TYPE=""
 STORAGE=""
 
-# Parse both --config and --type flags
 while [[ $# -gt 0 ]]; do
     case $1 in
         --config)
@@ -45,6 +43,22 @@ echo "Using Storage: $STORAGE"
 export CANTOR_CONFIG_FILE="$CONFIG_FILE"
 export CANTOR_STORAGE_TYPE="$STORAGE"
 
+# Start MySQL if needed
+if [ "$STORAGE" == "mysql" ]; then
+    echo "Starting MySQL container..."
+    docker run -d \
+        --name mysql \
+        --publish 3306:3306 \
+        -e MYSQL_ALLOW_EMPTY_PASSWORD=yes \
+        mysql:8.4
+    sleep 10
+fi
+
+# Connect to S3 bucket if needed
+if [ "$STORAGE" == "s3" ]; then
+  export CANTOR_S3_BUCKET=warden-cantor--monitoring--dev1--us-west-2--dev
+fi
+
 # Build cantor-server jar if it doesn't exist
 SERVER_JAR="${REPO_ROOT}/env/dockers/cantor/cantor-server.jar"
 if [ ! -f "${SERVER_JAR}" ]; then
@@ -58,10 +72,16 @@ if [ ! -f "${SERVER_JAR}" ]; then
 fi
 
 cd "${REPO_ROOT}/cantor-integration"
-docker-compose run --rm --build cantor-client --type ${TYPE}
+
+docker-compose up -d --build cantor-server
+docker-compose run --rm cantor-client --type ${TYPE}
 
 EXIT_CODE=$?
 
 docker-compose down
+if [ "$STORAGE" == "mysql" ]; then
+    echo "Removing MySQL container..."
+    docker rm -f mysql
+fi
 
 exit ${EXIT_CODE}

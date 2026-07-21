@@ -32,13 +32,8 @@ public class IntegrationTestRunner {
             serverManager.connect();
             Cantor client = serverManager.getClient();
 
-            // Run tests
             logger.info("Running tests...");
 
-            // The test classes live in src/test/java, which the main source set
-            // cannot reference at compile time. Load them by name at runtime
-            // (they must be on the runtime classpath, hence exec.classpathScope=test
-            // in the ./integration-test launcher).
             final String[] testClassNames = {
                     "com.salesforce.cantor.integration.IntegrationEventsTest",
 //                    "com.salesforce.cantor.integration.IntegrationObjectsTest",

@@ -12,8 +12,6 @@ ENV CANTOR_SERVER_PORT="7443"
 # Wrapper script to run tests
 COPY --chmod=755 <<'EOF' /entrypoint.sh
 #!/bin/sh
-echo "Waiting for server to start..."
-sleep 10
 mvn -q -pl cantor-integration test-compile exec:java \
   -Dexec.mainClass=com.salesforce.cantor.integration.IntegrationTestRunner \
   -Dexec.args="$*" \

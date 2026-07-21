@@ -12,8 +12,12 @@ services:
       - cantor-network
     volumes:
       - ${CANTOR_CONFIG_FILE:-../env/dockers/cantor/cantor-server.conf}:/home/cantor/cantor-server.conf:ro
+      - ~/.aws/credentials:/root/.aws/credentials:ro
     environment:
       - CANTOR_STORAGE_TYPE=${CANTOR_STORAGE_TYPE}
+      - CANTOR_S3_BUCKET=${CANTOR_S3_BUCKET}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   cantor-client:
     build:
