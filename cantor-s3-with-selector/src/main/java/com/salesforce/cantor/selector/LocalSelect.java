@@ -43,7 +43,7 @@ public class LocalSelect extends SelectUtils{
                 }
                 final StoredEvent event = this.parser.fromJson(line, StoredEvent.class);
                 if (match(event, request)) {
-                    results.append(select(line, event, request)).append("\n");
+                    results.append(selectRequestField(line, event, request)).append("\n");
                 }
             }
             return results.toString();
@@ -55,7 +55,7 @@ public class LocalSelect extends SelectUtils{
         }
     }
 
-    private String select(final String originalLine, final StoredEvent event, final CantorSelectRequest request) {
+    private String selectRequestField(final String originalLine, final StoredEvent event, final CantorSelectRequest request) {
         switch (request.getSelection()) {
             case METADATA: {
                 final String metadataKey = request.getSelectionKey();
