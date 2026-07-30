@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 
 public class LocalSelect extends SelectUtils{
     private static final Logger logger = LoggerFactory.getLogger(LocalSelect.class);
@@ -41,7 +43,7 @@ public class LocalSelect extends SelectUtils{
                 }
                 final StoredEvent event = this.parser.fromJson(line, StoredEvent.class);
                 if (match(event, request)) {
-                    results.append(line).append("\n");
+                    results.append(select(line, event, request)).append("\n");
                 }
             }
             return results.toString();
@@ -50,6 +52,25 @@ public class LocalSelect extends SelectUtils{
                     request.getBucketName(), request.getObjectKey(),
                     ((System.nanoTime() - before) / 1_000_000)
             );
+        }
+    }
+
+    private String select(final String originalLine, final StoredEvent event, final CantorSelectRequest request) {
+        switch (request.getSelection()) {
+            case METADATA: {
+                final String key = request.getSelectionKey();
+                return this.parser.toJson(Collections.singletonMap(key, event.metadata.get(key)));
+            }
+            case DIMENSION: {
+                final String key = request.getSelectionKey();
+                final Map<String, Object> projected = new LinkedHashMap<>();
+                projected.put("timestampMillis", event.timestampMillis);
+                projected.put(key, event.dimensions.get(key));
+                return this.parser.toJson(projected);
+            }
+            case ALL:
+            default:
+                return originalLine;
         }
     }
 

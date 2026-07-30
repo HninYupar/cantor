@@ -475,7 +475,7 @@ public class EventsOnS3withSelector extends AbstractBaseS3Namespaceable implemen
                                       final boolean includePayloads) throws IOException {
 
         final List<Event> results = new ArrayList<>();
-        final CantorSelectRequest request = new CantorSelectRequest(this.bucketName, objectKey, startTimestampMillis, endTimestampMillis, metadataQuery, dimensionsQuery);
+        final CantorSelectRequest request = CantorSelectRequest.selectAll(this.bucketName, objectKey, startTimestampMillis, endTimestampMillis, metadataQuery, dimensionsQuery);
 
         try (final Scanner lineReader = new Scanner(this.selectUtils.query(request))) {
             // json events are stored in json lines format, so one json object per line
@@ -512,11 +512,8 @@ public class EventsOnS3withSelector extends AbstractBaseS3Namespaceable implemen
                                            final Map<String, String> dimensionsQuery) throws IOException {
 
         final Set<String> results = new HashSet<>();
-        final String query = generateMetadataQuery(metadataKey, startTimestampMillis, endTimestampMillis, metadataQuery, dimensionsQuery);
-
-        // TO DO: switch to this.selectUtils.[something](request)
-        try (final Scanner lineReader = new Scanner(S3Select.queryObjectJson(this.s3Client, this.bucketName, objectKey, query))) {
-
+        final CantorSelectRequest request = CantorSelectRequest.selectMetadata(this.bucketName, objectKey, startTimestampMillis, endTimestampMillis, metadataQuery, dimensionsQuery, metadataKey);
+        try (final Scanner lineReader = new Scanner(this.selectUtils.query(request))) {
             // json events are stored in json lines format, so one json object per line
             while (lineReader.hasNext()) {
                 final Map<String, String> metadata = this.parser.fromJson(lineReader.nextLine(), Map.class);
@@ -535,11 +532,8 @@ public class EventsOnS3withSelector extends AbstractBaseS3Namespaceable implemen
                                             final Map<String, String> metadataQuery,
                                             final Map<String, String> dimensionsQuery) throws IOException {
         final List<Event> results = new ArrayList<>();
-        final String query = generateDimensionQuery(dimensionKey, startTimestampMillis, endTimestampMillis, metadataQuery, dimensionsQuery);
-
-        // TO DO: switch to this.selectUtils.[something](request)
-        try (final Scanner lineReader = new Scanner(S3Select.queryObjectJson(this.s3Client, this.bucketName, objectKey, query))) {
-
+        final CantorSelectRequest request = CantorSelectRequest.selectDimension(this.bucketName, objectKey, startTimestampMillis, endTimestampMillis, metadataQuery, dimensionsQuery, dimensionKey);
+        try (final Scanner lineReader = new Scanner(this.selectUtils.query(request))) {
             // json events are stored in json lines format, so one json object per line
             while (lineReader.hasNext()) {
                 final Map<String, Double> parsedJson = this.parser.fromJson(lineReader.nextLine(), Map.class);
@@ -557,48 +551,6 @@ public class EventsOnS3withSelector extends AbstractBaseS3Namespaceable implemen
         final Set<String> keys = getMatchingKeys(namespace, 0, endTimestampMillis);
         logger.info("expiring objects: {}", keys);
         S3Utils.deleteObjects(this.s3Client, this.bucketName, keys);
-    }
-
-    // creates an s3 select compatible query
-    // see https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference-select.html
-    private String generateGetQuery(final long startTimestampMillis,
-                                 final long endTmestampMillis,
-                                 final Map<String, String> metadataQuery,
-                                 final Map<String, String> dimensionsQuery) {
-        final String timestampClause = String.format("s.timestampMillis >= %d AND s.timestampMillis <= %d", startTimestampMillis, endTmestampMillis);
-        return String.format("SELECT * FROM s3object[*] s WHERE %s %s %s",
-                timestampClause,
-                getMetadataQuerySql(metadataQuery),
-                getDimensionsQuerySql(dimensionsQuery)
-        );
-    }
-
-    private String generateMetadataQuery(final String metadataKey,
-                                         final long startTimestampMillis,
-                                         final long endTmestampMillis,
-                                         final Map<String, String> metadataQuery,
-                                         final Map<String, String> dimensionsQuery) {
-        final String timestampClause = String.format("s.timestampMillis >= %d AND s.timestampMillis <= %d", startTimestampMillis, endTmestampMillis);
-        return String.format("SELECT s.metadata.\"%s\" FROM s3object[*] s WHERE %s %s %s",
-                metadataKey,
-                timestampClause,
-                getMetadataQuerySql(metadataQuery),
-                getDimensionsQuerySql(dimensionsQuery)
-        );
-    }
-
-    private String generateDimensionQuery(final String dimensionKey,
-                                          final long startTimestampMillis,
-                                          final long endTmestampMillis,
-                                          final Map<String, String> metadataQuery,
-                                          final Map<String, String> dimensionsQuery) {
-        final String timestampClause = String.format("s.timestampMillis >= %d AND s.timestampMillis <= %d", startTimestampMillis, endTmestampMillis);
-        return String.format("SELECT s.timestampMillis, s.dimensions.\"%s\" FROM s3object[*] s WHERE %s %s %s",
-                dimensionKey,
-                timestampClause,
-                getMetadataQuerySql(metadataQuery),
-                getDimensionsQuerySql(dimensionsQuery)
-        );
     }
 
     private Set<String> getMatchingKeys(final String namespace, final long startTimestampMillis, final long endTimestampMillis)

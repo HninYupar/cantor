@@ -23,12 +23,7 @@ public class S3Select extends SelectUtils {
     public String query(final CantorSelectRequest request) throws IOException {
         final long before = System.nanoTime();
         try {
-            final String querySQL = generateGetQuery(
-                    request.getStartTimestampMillis(),
-                    request.getEndTimestampMillis(),
-                    request.getMetadataQuery(),
-                    request.getDimensionsQuery()
-            );
+            final String querySQL = generateQuery(request);
             return queryObjectJson(
                     this.s3Client, request.getBucketName(), request.getObjectKey(), querySQL);
         } finally {
@@ -36,6 +31,23 @@ public class S3Select extends SelectUtils {
                     request.getBucketName(), request.getObjectKey(),
                     ((System.nanoTime() - before) / 1_000_000)
             );
+        }
+    }
+
+    private String generateQuery(final CantorSelectRequest request) {
+        switch (request.getSelection()) {
+            case METADATA:
+                return generateMetadataQuery(request.getSelectionKey(),
+                        request.getStartTimestampMillis(), request.getEndTimestampMillis(),
+                        request.getMetadataQuery(), request.getDimensionsQuery());
+            case DIMENSION:
+                return generateDimensionQuery(request.getSelectionKey(),
+                        request.getStartTimestampMillis(), request.getEndTimestampMillis(),
+                        request.getMetadataQuery(), request.getDimensionsQuery());
+            case ALL:
+            default:
+                return generateGetQuery(request.getStartTimestampMillis(), request.getEndTimestampMillis(),
+                        request.getMetadataQuery(), request.getDimensionsQuery());
         }
     }
 
@@ -47,6 +59,34 @@ public class S3Select extends SelectUtils {
                                     final Map<String, String> dimensionsQuery) {
         final String timestampClause = String.format("s.timestampMillis >= %d AND s.timestampMillis <= %d", startTimestampMillis, endTimestampMillis);
         return String.format("SELECT * FROM s3object[*] s WHERE %s %s %s",
+                timestampClause,
+                getMetadataQuerySql(metadataQuery),
+                getDimensionsQuerySql(dimensionsQuery)
+        );
+    }
+
+    private String generateMetadataQuery(final String metadataKey,
+                                         final long startTimestampMillis,
+                                         final long endTmestampMillis,
+                                         final Map<String, String> metadataQuery,
+                                         final Map<String, String> dimensionsQuery) {
+        final String timestampClause = String.format("s.timestampMillis >= %d AND s.timestampMillis <= %d", startTimestampMillis, endTmestampMillis);
+        return String.format("SELECT s.metadata.\"%s\" FROM s3object[*] s WHERE %s %s %s",
+                metadataKey,
+                timestampClause,
+                getMetadataQuerySql(metadataQuery),
+                getDimensionsQuerySql(dimensionsQuery)
+        );
+    }
+
+    private String generateDimensionQuery(final String dimensionKey,
+                                          final long startTimestampMillis,
+                                          final long endTmestampMillis,
+                                          final Map<String, String> metadataQuery,
+                                          final Map<String, String> dimensionsQuery) {
+        final String timestampClause = String.format("s.timestampMillis >= %d AND s.timestampMillis <= %d", startTimestampMillis, endTmestampMillis);
+        return String.format("SELECT s.timestampMillis, s.dimensions.\"%s\" FROM s3object[*] s WHERE %s %s %s",
+                dimensionKey,
                 timestampClause,
                 getMetadataQuerySql(metadataQuery),
                 getDimensionsQuerySql(dimensionsQuery)
