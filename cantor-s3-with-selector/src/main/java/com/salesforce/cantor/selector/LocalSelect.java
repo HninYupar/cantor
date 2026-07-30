@@ -58,15 +58,15 @@ public class LocalSelect extends SelectUtils{
     private String select(final String originalLine, final StoredEvent event, final CantorSelectRequest request) {
         switch (request.getSelection()) {
             case METADATA: {
-                final String key = request.getSelectionKey();
-                return this.parser.toJson(Collections.singletonMap(key, event.metadata.get(key)));
+                final String metadataKey = request.getSelectionKey();
+                return this.parser.toJson(Collections.singletonMap(metadataKey, event.metadata.get(metadataKey)));
             }
             case DIMENSION: {
-                final String key = request.getSelectionKey();
-                final Map<String, Object> projected = new LinkedHashMap<>();
-                projected.put("timestampMillis", event.timestampMillis);
-                projected.put(key, event.dimensions.get(key));
-                return this.parser.toJson(projected);
+                final String dimensionKey = request.getSelectionKey();
+                final Map<String, Object> filteredResult = new LinkedHashMap<>();
+                filteredResult.put("timestampMillis", event.timestampMillis);
+                filteredResult.put(dimensionKey, event.dimensions.get(dimensionKey));
+                return this.parser.toJson(filteredResult);
             }
             case ALL:
             default:
