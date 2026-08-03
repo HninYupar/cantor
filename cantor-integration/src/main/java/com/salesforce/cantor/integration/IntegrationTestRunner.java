@@ -24,8 +24,11 @@ public class IntegrationTestRunner {
 
         int exitCode = 0;
 
-        final String host = System.getenv("CANTOR_SERVER_HOST");
-        final int port = Integer.parseInt(System.getenv("CANTOR_SERVER_PORT"));
+        final String hostEnv = System.getenv("CANTOR_SERVER_HOST");
+        final String host = (hostEnv != null) ? hostEnv : "localhost";
+
+        final String portEnv = System.getenv("CANTOR_SERVER_PORT");
+        final int port = (portEnv != null) ? Integer.parseInt(portEnv) : 7443;
 
         ServerManager serverManager = new ServerManager(host, port);
         try {

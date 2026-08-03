@@ -10,15 +10,55 @@ CONFIG_FILE=""
 TYPE=""
 STORAGE=""
 
+helpMessage() {
+  cat <<EOF
+Usage: ./integration-test.sh --type <TYPE> [--config <FILE>]
+
+Spins up a Cantor server with the requested backend and runs integration tests.
+
+Options:
+  -t, --type TYPE      Storage type. One of: CantorOnH2, CantorOnMySQL, CantorOnS3.
+                        Defaults to CantorOnH2 if omitted.
+  -c, --config FILE    Path to a cantor-server.conf file.
+                        Defaults to env/dockers/cantor/cantor-server.conf
+  -h, --help           Show this help message and exit
+
+Examples:
+  ./integration-test.sh --type CantorOnH2
+EOF
+}
+
+errorMessage() {
+  cat <<EOF
+Unknown option. See available options below.
+
+Options:
+  -t, --type TYPE      Storage type. One of: CantorOnH2, CantorOnMySQL, CantorOnS3.
+                        Defaults to CantorOnH2 if omitted.
+  -c, --config FILE    Path to a cantor-server.conf file.
+                        Defaults to env/dockers/cantor/cantor-server.conf
+  -h, --help           Show the help message and exit
+
+EOF
+}
+
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --config)
+        -c|--config)
             CONFIG_FILE="$2"
             shift 2
             ;;
-        --type)
+        -t|--type)
             TYPE="$2"
             shift 2
+            ;;
+        -h|--help)
+            helpMessage
+            exit 0
+            ;;
+        *)
+            errorMessage
+            exit 1
             ;;
     esac
 done
@@ -28,7 +68,11 @@ if [ -z "$CONFIG_FILE" ]; then
     CONFIG_FILE="${REPO_ROOT}/env/dockers/cantor/cantor-server.conf"
 fi
 
-if [ "${TYPE}" == "CantorOnH2" ]; then
+if [ -z "${TYPE}" ]; then
+    echo "--type flag is missing. Defaulting storage type to H2."
+    TYPE="CantorOnH2"
+    STORAGE="h2"
+elif [ "${TYPE}" == "CantorOnH2" ]; then
     STORAGE="h2"
 elif [ "${TYPE}" == "CantorOnMySQL" ]; then
     STORAGE="mysql"
@@ -56,7 +100,7 @@ fi
 
 # Connect to S3 bucket if needed
 if [ "$STORAGE" == "s3" ]; then
-  export CANTOR_S3_BUCKET=warden-cantor--monitoring--dev1--us-west-2--dev
+  export CANTOR_S3_BUCKET=bucket-place-holder
 fi
 
 # Build cantor-server jar if it doesn't exist
@@ -74,7 +118,7 @@ fi
 cd "${REPO_ROOT}/cantor-integration"
 
 docker-compose up -d --build cantor-server
-docker-compose run --rm cantor-client --type ${TYPE}
+docker-compose run --build --rm cantor-client --type ${TYPE}
 
 EXIT_CODE=$?
 
