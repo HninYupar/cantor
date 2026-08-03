@@ -2,11 +2,6 @@ package com.salesforce.cantor.integration;
 
 import com.salesforce.cantor.Cantor;
 import com.salesforce.cantor.grpc.CantorOnGrpc;
-import com.salesforce.cantor.server.CantorEnvironment;
-import com.salesforce.cantor.server.grpc.GrpcServer;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigValueFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
