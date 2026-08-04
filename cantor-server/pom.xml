@@ -69,6 +69,12 @@
             <artifactId>cantor-s3</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!--CANTOR S3 with selector-->
+        <dependency>
+            <groupId>com.salesforce.cantor</groupId>
+            <artifactId>cantor-s3-with-selector</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!--CANTOR MISC-->
         <dependency>
             <groupId>com.salesforce.cantor</groupId>

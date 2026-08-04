@@ -27,6 +27,7 @@ import com.salesforce.cantor.mysql.CantorOnMysql;
 import com.salesforce.cantor.mysql.MysqlDataSourceProperties;
 import com.salesforce.cantor.mysql.MysqlDataSourceProvider;
 import com.salesforce.cantor.s3.CantorOnS3;
+import com.salesforce.cantor.selector.CantorOnS3withSelector;
 import com.salesforce.cantor.server.CantorEnvironment;
 import com.typesafe.config.Config;
 import org.slf4j.Logger;
@@ -83,6 +84,7 @@ public class CantorFactory {
             // no support for s3 on sets therefore another cantor type must be used
             final Sets sets = getCantorByType(config.getString(CANTOR_S3_SETS_TYPE)).sets();
             return new LoggableCantor(new CantorOnS3(createAwsClient(config), bucketName) {
+//            return new LoggableCantor(new CantorOnS3withSelector(createAwsClient(config), bucketName) {
                 @Override
                 public Sets sets() {
                     return sets;
