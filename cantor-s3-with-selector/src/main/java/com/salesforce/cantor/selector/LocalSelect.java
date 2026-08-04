@@ -11,6 +11,9 @@ import java.util.regex.Pattern;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 
+/**
+ * This class implements client-side select.
+ */
 public class LocalSelect extends SelectUtils{
     private static final Logger logger = LoggerFactory.getLogger(LocalSelect.class);
 

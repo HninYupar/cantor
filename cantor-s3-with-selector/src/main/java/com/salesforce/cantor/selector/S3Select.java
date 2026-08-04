@@ -10,6 +10,9 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.Scanner;
 
+/**
+ * This class uses S3 select.
+ */
 public class S3Select extends SelectUtils {
     private static final Logger logger = LoggerFactory.getLogger(S3Select.class);
 

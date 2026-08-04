@@ -3,7 +3,9 @@ package com.salesforce.cantor.selector;
 import java.util.Collections;
 import java.util.Map;
 
-// Builder pattern
+/**
+ * Defines the request type.
+ */
 public class CantorSelectRequest {
     public enum Selection {ALL, METADATA, DIMENSION}
 
