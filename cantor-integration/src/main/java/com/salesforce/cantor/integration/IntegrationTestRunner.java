@@ -35,47 +35,42 @@ public class IntegrationTestRunner {
             serverManager.connect();
             Cantor client = serverManager.getClient();
 
-            logger.info("Running tests...");
+            final Class<?> testClass = Class.forName("com.salesforce.cantor.integration.IntegrationEventsTest");
+            testClass.getMethod("setCantor", Cantor.class).invoke(null, client);
 
-            final String[] testClassNames = {
-                    "com.salesforce.cantor.integration.IntegrationEventsTest",
-//                    "com.salesforce.cantor.integration.IntegrationObjectsTest",
-//                    "com.salesforce.cantor.integration.IntegrationSetsTest"
-            };
-
-            final Class<?>[] testClasses = new Class<?>[testClassNames.length];
-            for (int i = 0; i < testClassNames.length; i++) {
-                final Class<?> testClass = Class.forName(testClassNames[i]);
-                // inject the client via the static setCantor(Cantor) method
-                testClass.getMethod("setCantor", Cantor.class).invoke(null, client);
-                testClasses[i] = testClass;
-            }
-
-            TimingListener timingListener = new TimingListener();
-
-            TestNG testng = new TestNG();
-            testng.setTestClasses(testClasses);
-            testng.addListener(timingListener);
-            testng.run();
-
-            if (testng.getStatus() != 0) {
-                exitCode = 1;
-            }
-
-            Map<String, List<Long>> methods = new LinkedHashMap<>();
-            for (TimingListener.TestTiming t : timingListener.getResults()) {
-                String key = t.getClassName() + "." + t.getMethodName();
-                List<Long> values = methods.get(key);
-                if (values == null) {
-                    values = new ArrayList<>();
-                    methods.put(key, values);
-                }
-                values.add(t.getDurationMs());
-            }
+            final int[] eventCounts = {30, 300, 3000};
 
             List<BenchmarkStats> stats = new ArrayList<>();
-            for (Map.Entry<String, List<Long>> e : methods.entrySet()) {
-                stats.add(new BenchmarkStats(e.getKey(), e.getValue()));
+
+            for (final int eventCount: eventCounts) {
+                testClass.getMethod("setEventCount", int.class).invoke(null, eventCount);
+
+                logger.info("Running tests for eventCount={}", eventCount);
+
+                TimingListener timingListener = new TimingListener();
+                TestNG testng = new TestNG();
+                testng.setTestClasses(new Class<?>[]{testClass});
+                testng.addListener(timingListener);
+                testng.run();
+
+                if (testng.getStatus() != 0) {
+                    exitCode = 1;
+                }
+
+                Map<String, List<Long>> methods = new LinkedHashMap<>();
+                for (TimingListener.TestTiming t: timingListener.getResults()) {
+                    String key = t.getMethodName();
+                    List<Long> values = methods.get(key);
+                    if (values == null) {
+                        values = new ArrayList<>();
+                        methods.put(key, values);
+                    }
+                    values.add(t.getDurationMs());
+                }
+
+                for (Map.Entry<String, List<Long>> e : methods.entrySet()) {
+                    stats.add(new BenchmarkStats(eventCount, e.getKey(), e.getValue()));
+                }
             }
 
             final String reportPath = "cantor-integration/reports/" + version + ".csv";

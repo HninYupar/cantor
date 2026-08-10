@@ -19,10 +19,10 @@ public class CSVReporter {
             Files.createDirectories(path.getParent());
         }
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path))) {
-            writer.println("Method,Count,Sum,Avg,Min,Max,P50,P90,P95,P99");
+            writer.println("EventCount,Method,Count,Sum,Avg,Min,Max,P50,P90,P95,P99");
             for (final BenchmarkStats s : stats) {
-                writer.println(String.format("%s,%d,%d,%.1f,%d,%d,%d,%d,%d,%d",
-                        s.getName(), s.getCount(), s.getSum(), s.getAvg(),
+                writer.println(String.format("%d,%s,%d,%d,%.1f,%d,%d,%d,%d,%d,%d",
+                        s.getEventCount(), s.getName(), s.getCount(), s.getSum(), s.getAvg(),
                         s.getMin(), s.getMax(),
                         s.getP50(), s.getP90(), s.getP95(), s.getP99()));
             }
