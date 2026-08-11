@@ -13,7 +13,7 @@ import java.util.Scanner;
 /**
  * This class uses S3 select.
  */
-public class S3Select extends SelectUtils {
+public class S3Select implements Select {
     private static final Logger logger = LoggerFactory.getLogger(S3Select.class);
 
     private final AmazonS3 s3Client;

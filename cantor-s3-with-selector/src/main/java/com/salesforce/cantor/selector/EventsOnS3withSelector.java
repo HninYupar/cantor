@@ -71,7 +71,7 @@ public class EventsOnS3withSelector extends AbstractBaseS3Namespaceable implemen
     private final Gson parser = new GsonBuilder().create();
 
     // Select type (LocalSelect or S3Select)
-    private final SelectUtils selectUtils;
+    private final Select select;
 
     // reference to the flush cycle guid
     private final AtomicReference<String> currentFlushCycleGuid = new AtomicReference<>();
@@ -92,8 +92,8 @@ public class EventsOnS3withSelector extends AbstractBaseS3Namespaceable implemen
 
     public EventsOnS3withSelector(final AmazonS3 s3Client,
                                   final String bucketName,
-                                  final SelectUtils selectUtils) throws IOException {
-        this(s3Client, bucketName, defaultBufferDirectory, defaultFlushIntervalSeconds, selectUtils);
+                                  final Select select) throws IOException {
+        this(s3Client, bucketName, defaultBufferDirectory, defaultFlushIntervalSeconds, select);
     }
 
     public EventsOnS3withSelector(final AmazonS3 s3Client,
@@ -106,13 +106,13 @@ public class EventsOnS3withSelector extends AbstractBaseS3Namespaceable implemen
                                   final String bucketName,
                                   final String bufferDirectory,
                                   final long flushIntervalSeconds,
-                                  final SelectUtils selectUtils) throws IOException {
+                                  final Select select) throws IOException {
         super(s3Client, bucketName, "events");
         checkArgument(flushIntervalSeconds > 0, "invalid flush interval");
         checkString(bucketName, "invalid bucket name");
         checkString(bufferDirectory, "invalid buffer directory");
 
-        this.selectUtils = selectUtils;
+        this.select = select;
         this.bufferDirectory = bufferDirectory;
 
         // initialize s3 transfer manager
@@ -477,7 +477,7 @@ public class EventsOnS3withSelector extends AbstractBaseS3Namespaceable implemen
         final List<Event> results = new ArrayList<>();
         final CantorSelectRequest request = CantorSelectRequest.selectAll(this.bucketName, objectKey, startTimestampMillis, endTimestampMillis, metadataQuery, dimensionsQuery);
 
-        try (final Scanner lineReader = new Scanner(this.selectUtils.query(request))) {
+        try (final Scanner lineReader = new Scanner(this.select.query(request))) {
             // json events are stored in json lines format, so one json object per line
             while (lineReader.hasNext()) {
                 final Event event = this.parser.fromJson(lineReader.nextLine(), Event.class);
@@ -513,7 +513,7 @@ public class EventsOnS3withSelector extends AbstractBaseS3Namespaceable implemen
 
         final Set<String> results = new HashSet<>();
         final CantorSelectRequest request = CantorSelectRequest.selectMetadata(this.bucketName, objectKey, startTimestampMillis, endTimestampMillis, metadataQuery, dimensionsQuery, metadataKey);
-        try (final Scanner lineReader = new Scanner(this.selectUtils.query(request))) {
+        try (final Scanner lineReader = new Scanner(this.select.query(request))) {
             // json events are stored in json lines format, so one json object per line
             while (lineReader.hasNext()) {
                 final Map<String, String> metadata = this.parser.fromJson(lineReader.nextLine(), Map.class);
@@ -533,7 +533,7 @@ public class EventsOnS3withSelector extends AbstractBaseS3Namespaceable implemen
                                             final Map<String, String> dimensionsQuery) throws IOException {
         final List<Event> results = new ArrayList<>();
         final CantorSelectRequest request = CantorSelectRequest.selectDimension(this.bucketName, objectKey, startTimestampMillis, endTimestampMillis, metadataQuery, dimensionsQuery, dimensionKey);
-        try (final Scanner lineReader = new Scanner(this.selectUtils.query(request))) {
+        try (final Scanner lineReader = new Scanner(this.select.query(request))) {
             // json events are stored in json lines format, so one json object per line
             while (lineReader.hasNext()) {
                 final Map<String, Double> parsedJson = this.parser.fromJson(lineReader.nextLine(), Map.class);

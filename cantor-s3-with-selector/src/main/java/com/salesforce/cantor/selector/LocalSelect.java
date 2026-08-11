@@ -14,7 +14,7 @@ import java.util.LinkedHashMap;
 /**
  * This class implements client-side select.
  */
-public class LocalSelect extends SelectUtils{
+public class LocalSelect implements Select {
     private static final Logger logger = LoggerFactory.getLogger(LocalSelect.class);
 
     private final AmazonS3 s3Client;
