@@ -121,6 +121,7 @@ public class IntegrationEventsTest {
         assertEquals(results.size(), eventCount);
     }
 
+    // query events that have the dimension key "dimension-key-0"
     @Test(invocationCount = INVOCATIONS)
     public void getDimension() throws Exception {
         final Events events = getEvents();
@@ -136,7 +137,7 @@ public class IntegrationEventsTest {
 
     // query the events that exactly match with expected metadata value
     @Test(invocationCount = INVOCATIONS)
-    public void getWithMetadataQuery1() throws Exception {
+    public void getMetadataExactMatch() throws Exception {
         final Events events = getEvents();
         final Map<String, String> metadataQuery = Collections.singletonMap("user", EXACT_METADATA_FILTER);
 
@@ -150,7 +151,7 @@ public class IntegrationEventsTest {
 
     // query the events that match with metadata regex pattern
     @Test(invocationCount = INVOCATIONS)
-    public void getWithMetadataQuery2() throws Exception {
+    public void getMetadataPatternMatch() throws Exception {
         final Events events = getEvents();
         final Map<String, String> metadataQuery = Collections.singletonMap("region", REGEX_METADATA_FILTER);
 
@@ -164,7 +165,7 @@ public class IntegrationEventsTest {
 
     // query the events that match an exact dimension value
     @Test(invocationCount = INVOCATIONS)
-    public void getWithDimensionQuery1() throws Exception {
+    public void getDimensionExactMatch() throws Exception {
         final Events events = getEvents();
         final Map<String, String> dimensionsQuery = Collections.singletonMap("latency", EXACT_DIMENSION_FILTER);
 
@@ -178,7 +179,7 @@ public class IntegrationEventsTest {
 
     // query the events that match a dimension range (between)
     @Test(invocationCount = INVOCATIONS)
-    public void getWithDimensionQuery2() throws Exception {
+    public void getDimensionRangeMatch() throws Exception {
         final Events events = getEvents();
         final Map<String, String> dimensionsQuery = Collections.singletonMap("latency", RANGE_DIMENSION_FILTER);
 
