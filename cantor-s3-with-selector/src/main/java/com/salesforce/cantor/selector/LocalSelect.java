@@ -86,7 +86,7 @@ public class LocalSelect implements Select {
         }
 
         for (final Map.Entry<String, String> entry : request.getMetadataQuery().entrySet()) {
-            final String actual = event.metadata.get(entry.getKey());
+            final String actual = (event.metadata != null) ? event.metadata.get(entry.getKey()) : null;
             final String pattern = entry.getValue();
             if (!metadataMatch(pattern, actual)) {
                 return false;
@@ -94,7 +94,7 @@ public class LocalSelect implements Select {
         }
 
         for (final Map.Entry<String, String> entry : request.getDimensionsQuery().entrySet()) {
-            final Double actual = event.dimensions.get(entry.getKey());
+            final Double actual = (event.dimensions != null) ? event.dimensions.get(entry.getKey()) : null;
             final String pattern = entry.getValue();
             if (!dimensionMatch(pattern, actual)) {
                 return false;
