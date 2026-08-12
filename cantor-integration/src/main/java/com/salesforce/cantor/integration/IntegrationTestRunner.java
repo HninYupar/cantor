@@ -73,9 +73,14 @@ public class IntegrationTestRunner {
                 }
             }
 
-            final String reportPath = "cantor-integration/reports/" + version + ".csv";
+            final String reportsDir = "cantor-integration/reports";
+            final String reportPath = reportsDir + "/" + version + ".csv";
             CSVReporter.generate(reportPath, stats);
             logger.info("Performance report generated at {}", reportPath);
+
+            final String htmlPath = reportsDir + "/cantor-performance-metric.html";
+            HTMLReporter.generate(reportsDir, htmlPath);
+            logger.info("HTML report generated at {}", htmlPath);
 
             logger.info("All tests completed.");
 
