@@ -12,7 +12,7 @@ import java.util.Map;
 
 /*
  * Reads the per-storage CSV reports from the reports folder and creates a
- * single HTML report.
+ * single HTML report. The report is auto regenerated on every test run.
  *
  * To regenerate manually, run the following command from the cantor-integration directory:
  *   mvn compile exec:java@html-report
