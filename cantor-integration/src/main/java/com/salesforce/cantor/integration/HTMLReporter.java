@@ -15,7 +15,7 @@ import java.util.Map;
  * single HTML report.
  *
  * To regenerate manually, run the following command from the cantor-integration directory:
- *   mvn compile exec:java
+ *   mvn compile exec:java@html-report
  */
 public class HTMLReporter {
 
