@@ -9,6 +9,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE=""
 TYPE=""
 STORAGE=""
+SELECT=""
 
 helpMessage() {
   cat <<EOF
@@ -19,12 +20,17 @@ Spins up a Cantor server with the requested backend and runs integration tests.
 Options:
   -t, --type TYPE      Storage type. One of: CantorOnH2, CantorOnMySQL, CantorOnS3.
                         Defaults to CantorOnH2 if omitted.
+  -s, --select SELECT  Only for CantorOnS3. Defines which Select implementation the server
+                        should use: 's3' (S3 Select) or 'local'
+                        (Client-side Select). Defaults to 's3'. Ignores for H2/MySQL.
   -c, --config FILE    Path to a cantor-server.conf file.
                         Defaults to env/dockers/cantor/cantor-server.conf
   -h, --help           Show this help message and exit
 
 Examples:
   ./integration-test.sh --type CantorOnH2
+  ./integration-test.sh --type CantorOnS3 --select s3
+  ./integration-test.sh --type CantorOnS3 --select local
 EOF
 }
 
@@ -35,6 +41,9 @@ Unknown option. See available options below.
 Options:
   -t, --type TYPE      Storage type. One of: CantorOnH2, CantorOnMySQL, CantorOnS3.
                         Defaults to CantorOnH2 if omitted.
+  -s, --select SELECT  Only for CantorOnS3. Defines which Select implementation the server
+                        should use: 's3' (S3 Select) or 'local'
+                        (Client-side Select). Defaults to 's3'. Ignores for H2/MySQL.
   -c, --config FILE    Path to a cantor-server.conf file.
                         Defaults to env/dockers/cantor/cantor-server.conf
   -h, --help           Show the help message and exit
@@ -50,6 +59,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -t|--type)
             TYPE="$2"
+            shift 2
+            ;;
+        -s|--select)
+            SELECT="$2"
             shift 2
             ;;
         -h|--help)
@@ -69,7 +82,7 @@ if [ -z "$CONFIG_FILE" ]; then
 fi
 
 if [ -z "${TYPE}" ]; then
-    echo "--type flag is missing. Defaulting storage type to H2."
+    echo "-t/--type flag is missing. Defaulting storage type to H2."
     TYPE="CantorOnH2"
     STORAGE="h2"
 elif [ "${TYPE}" == "CantorOnH2" ]; then
@@ -78,6 +91,20 @@ elif [ "${TYPE}" == "CantorOnMySQL" ]; then
     STORAGE="mysql"
 elif [ "${TYPE}" == "CantorOnS3" ]; then
     STORAGE="s3"
+fi
+
+if [ "$STORAGE" == "s3" ]; then
+    if [ -z "$SELECT" ]; then
+        echo "-s/--select flag is not provided; defaulting to 's3'"
+        SELECT="s3"
+    fi
+    case "$SELECT" in
+        s3)   TYPE="CantorOnS3-S3Select" ;;
+        local) TYPE="CantorOnS3-LocalSelect" ;;
+        *)     echo "Invalid select type. Use 's3' or 'local'."; exit 1 ;;
+    esac
+    export CANTOR_S3_SELECT_TYPE="$SELECT"
+    echo "Using $SELECT-select"
 fi
 
 echo "Using config: $CONFIG_FILE"

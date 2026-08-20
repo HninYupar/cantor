@@ -15,9 +15,11 @@ public class CantorOnS3withSelector implements Cantor {
     private final Objects objects;
     private final Events events;
 
-    public CantorOnS3withSelector(final AmazonS3 s3Client, final String bucketName) throws IOException {
-//        final Select select = new LocalSelect(s3Client);
-        final Select select = new S3Select(s3Client);
+    public CantorOnS3withSelector(final AmazonS3 s3Client,
+                                  final String bucketName,
+                                  final String selectType) throws IOException {
+        final Select select = ("s3".equals(selectType)) ? new S3Select(s3Client) : new LocalSelect(s3Client);
+
         this.objects = new ObjectsOnS3withSelector(s3Client, bucketName);
         this.events = new EventsOnS3withSelector(s3Client, bucketName, select);
     }

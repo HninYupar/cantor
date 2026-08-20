@@ -99,7 +99,7 @@ public class EventsOnS3withSelector extends AbstractBaseS3Namespaceable implemen
     public EventsOnS3withSelector(final AmazonS3 s3Client,
                                   final String bucketName,
                                   final String bufferDirectory) throws IOException {
-        this(s3Client, bucketName, bufferDirectory, defaultFlushIntervalSeconds, new LocalSelect(s3Client));
+        this(s3Client, bucketName, bufferDirectory, defaultFlushIntervalSeconds, new S3Select(s3Client));
     }
 
     public EventsOnS3withSelector(final AmazonS3 s3Client,

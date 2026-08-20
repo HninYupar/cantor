@@ -19,8 +19,6 @@ public class IntegrationTestRunner {
                 version = args[i + 1];
             }
         }
-        final String database = toStorageType(version);
-        logger.info("Running Cantor on {}", database);
 
         int exitCode = 0;
 
@@ -93,13 +91,3 @@ public class IntegrationTestRunner {
 
         System.exit(exitCode);
     }
-
-    // Extract database (e.g. "S3") from user supplied Cantor version (e.g. "CantorOnS3")
-    private static String toStorageType(final String version) {
-        String type = version.trim();
-        if (type.regionMatches(true, 0, "CantorOn", 0, "CantorOn".length())) {
-            type = type.substring("CantorOn".length());
-        }
-        return type.toLowerCase();
-    }
-}

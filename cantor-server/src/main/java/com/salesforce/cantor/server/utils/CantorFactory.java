@@ -54,6 +54,7 @@ import static com.salesforce.cantor.server.Constants.CANTOR_S3_BUCKET_REGION;
 import static com.salesforce.cantor.server.Constants.CANTOR_S3_ENDPOINT_OVERRIDE;
 import static com.salesforce.cantor.server.Constants.CANTOR_S3_PROXY_HOST;
 import static com.salesforce.cantor.server.Constants.CANTOR_S3_PROXY_PORT;
+import static com.salesforce.cantor.server.Constants.CANTOR_S3_SELECT_TYPE;
 import static com.salesforce.cantor.server.Constants.CANTOR_S3_SETS_TYPE;
 
 public class CantorFactory {
@@ -76,15 +77,22 @@ public class CantorFactory {
             }
 
             logger.info("creating s3 cantor instance with sets on {}...", config.getString(CANTOR_S3_SETS_TYPE));
+
             final String bucketName = config.getString(CANTOR_S3_BUCKET_NAME);
             if (Strings.isNullOrEmpty(bucketName)) {
                 throw new IllegalArgumentException("Bucket name invalid. Please set 's3." + CANTOR_S3_BUCKET_NAME + "'");
             }
 
+            final String selectType = config.getString(CANTOR_S3_SELECT_TYPE);
+            if (!"s3".equals(selectType) && !"local".equals(selectType)) {
+                throw new IllegalArgumentException("Select type invalid; expect 's3' or 'local'.");
+            }
+
+            logger.info("Using {} to query data from S3", "s3".equals(selectType) ? "S3Select" : "LocalSelect");
+
             // no support for s3 on sets therefore another cantor type must be used
             final Sets sets = getCantorByType(config.getString(CANTOR_S3_SETS_TYPE)).sets();
-            return new LoggableCantor(new CantorOnS3(createAwsClient(config), bucketName) {
-//            return new LoggableCantor(new CantorOnS3withSelector(createAwsClient(config), bucketName) {
+            return new LoggableCantor(new CantorOnS3withSelector(createAwsClient(config), bucketName, selectType) {
                 @Override
                 public Sets sets() {
                     return sets;
