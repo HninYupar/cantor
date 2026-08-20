@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /*
@@ -21,8 +22,9 @@ public class HTMLReporter {
 
     private static final String TITLE = "Cantor Performance Metric";
     private static final String DESCRIPTION =
-            "This report shows the performance of Cantor on H2, MySQL, and S3. "
-                    + "For S3, we compare S3 Select vs Client-side Select.";
+            "This report shows the performance of each Cantor instance run on the following tests. "
+                    + "Performance is measured as the latency per operation, in milliseconds. "
+                    + "For Cantor on S3, we compare two approaches: S3 Select and Client-side Select.";
 
     private static final String[][] TEST_CASES = {
             {"getAll", "retrieve all stored events"},
@@ -43,10 +45,14 @@ public class HTMLReporter {
     private static final String LOCAL_SELECT_LABEL = "Local Select";
     private static final String CLIENT_SIDE_LABEL = "Client-Side Select";
 
+    // Chart colors for the S3 Select vs Client-Side Select line chart.
+    private static final String S3_COLOR = "#0066CC";        // blue  — S3 Select
+    private static final String CLIENT_COLOR = "#6D8764";    // green — Client-Side Select
+
     private static final String H2_CSV = "CantorOnH2.csv";
     private static final String MYSQL_CSV = "CantorOnMySQL.csv";
-    private static final String S3_SELECT_CSV = "CantorOnS3.csv";
-    private static final String CLIENT_SIDE_CSV = "CantorOnS3withSelector.csv";
+    private static final String S3_SELECT_CSV = "CantorOnS3-S3Select.csv";
+    private static final String CLIENT_SIDE_CSV = "CantorOnS3-LocalSelect.csv";
 
     // Columns shown in each table (everything except EventCount, which is the group heading).
     private static final String[] DISPLAY_COLUMNS =
@@ -81,18 +87,33 @@ public class HTMLReporter {
 
         final StringBuilder body = new StringBuilder();
 
-        // Single-storage sections.
-        body.append(renderSection(H2_LABEL, H2_CSV, h2));
-        body.append('\n');
-        body.append(renderSection(MYSQL_LABEL, MYSQL_CSV, mysql));
-        body.append('\n');
+        // Single-storage sections. Skip a section entirely when its CSV is
+        // missing or empty, rather than rendering a "No data found" note.
+        if (!h2.isEmpty()) {
+            body.append(renderSection(H2_LABEL, H2_CSV, h2));
+            body.append('\n');
+        }
+        if (!mysql.isEmpty()) {
+            body.append(renderSection(MYSQL_LABEL, MYSQL_CSV, mysql));
+            body.append('\n');
+        }
 
         // S3 section: two approaches (S3 Select and Local Select) plus a comparison.
+        // Skip each sub-tile whose CSV is missing/empty, and only render the
+        // comparison table/chart when both approaches have data.
         final StringBuilder s3Inner = new StringBuilder();
-        s3Inner.append(renderSubSection(S3_SELECT_LABEL, S3_SELECT_CSV, s3));
-        s3Inner.append(renderSubSection(LOCAL_SELECT_LABEL, CLIENT_SIDE_CSV, clientSide));
-        s3Inner.append(renderComparison(s3, clientSide));
-        body.append(renderSectionWithBody(S3_LABEL, s3Inner.toString()));
+        if (!s3.isEmpty()) {
+            s3Inner.append(renderSubSection(S3_SELECT_LABEL, S3_SELECT_CSV, s3));
+        }
+        if (!clientSide.isEmpty()) {
+            s3Inner.append(renderSubSection(LOCAL_SELECT_LABEL, CLIENT_SIDE_CSV, clientSide));
+        }
+        if (!s3.isEmpty() && !clientSide.isEmpty()) {
+            s3Inner.append(renderComparison(s3, clientSide));
+        }
+        if (s3Inner.length() > 0) {
+            body.append(renderSectionWithBody(S3_LABEL, s3Inner.toString()));
+        }
 
         final Path out = Paths.get(outputPath);
         if (out.getParent() != null) {
@@ -239,6 +260,7 @@ public class HTMLReporter {
 
             groups.append("    <div class=\"group\">\n")
                   .append("      <h3>Number of Events: <strong>").append(escape(ec)).append("</strong></h3>\n")
+                  .append(renderComparisonChart(methods, s3m, csm))
                   .append("      <table class=\"cmp\">\n")
                   .append("        <thead>\n")
                   .append("          <tr><th rowspan=\"2\">Method</th>"
@@ -264,6 +286,251 @@ public class HTMLReporter {
                 + "      <h3 class=\"sub-approach-title\">S3 Select vs Client-Side Select</h3>\n"
                 + groups
                 + "    </div>\n";
+    }
+
+    /*
+     * Renders an SVG combo chart for one EventCount group comparing S3 Select vs
+     * Client-Side Select. Methods are on the x-axis. Each approach is drawn twice:
+     * P99 latency as a bar (scaled to the left y-axis) and Avg latency as a line
+     * (scaled to the right y-axis). The two metrics get independent axes because
+     * P99 (tail) is much larger than Avg. Lower is better (latency).
+     */
+    private static String renderComparisonChart(final List<String> methods,
+                                                 final Map<String, String[]> s3m,
+                                                 final Map<String, String[]> csm) {
+        if (methods.isEmpty()) {
+            return "";
+        }
+
+        final int n = methods.size();
+
+        // Bars show P99 (left axis); lines show Avg (right axis). NaN when missing.
+        final double[] s3Avg = new double[n];
+        final double[] csAvg = new double[n];
+        final double[] s3P99 = new double[n];
+        final double[] csP99 = new double[n];
+        double avgMax = 0.0;
+        double p99Max = 0.0;
+        boolean anyValue = false;
+        for (int i = 0; i < n; i++) {
+            s3Avg[i] = number(s3m.get(methods.get(i)), IDX_AVG);
+            csAvg[i] = number(csm.get(methods.get(i)), IDX_AVG);
+            s3P99[i] = number(s3m.get(methods.get(i)), IDX_P99);
+            csP99[i] = number(csm.get(methods.get(i)), IDX_P99);
+            if (!Double.isNaN(s3Avg[i])) {
+                avgMax = Math.max(avgMax, s3Avg[i]);
+                anyValue = true;
+            }
+            if (!Double.isNaN(csAvg[i])) {
+                avgMax = Math.max(avgMax, csAvg[i]);
+                anyValue = true;
+            }
+            if (!Double.isNaN(s3P99[i])) {
+                p99Max = Math.max(p99Max, s3P99[i]);
+                anyValue = true;
+            }
+            if (!Double.isNaN(csP99[i])) {
+                p99Max = Math.max(p99Max, csP99[i]);
+                anyValue = true;
+            }
+        }
+        if (!anyValue) {
+            return "";
+        }
+        if (avgMax <= 0.0) {
+            avgMax = 1.0;
+        }
+        if (p99Max <= 0.0) {
+            p99Max = 1.0;
+        }
+
+        // Chart geometry.
+        final int height = 340;
+        final int padLeft = 90;
+        final int padRight = 90;
+        final int padTop = 14;
+        final int padBottom = 100;
+        final int plotHeight = height - padTop - padBottom;
+        // Fixed spacing between methods; a small inset keeps the first group off
+        // the y-axis. The plot width is sized to the content so there is no large
+        // empty gap before the first group or after the last.
+        final int step = 90;
+        final int inset = 30;
+        final double xStart = padLeft + inset;
+        final int plotWidth = inset * 2 + step * (n - 1);
+        final int width = padLeft + plotWidth + padRight;
+        final int plotBottom = padTop + plotHeight;
+        final int plotRight = padLeft + plotWidth;
+
+        final StringBuilder svg = new StringBuilder();
+        svg.append("      <div class=\"chart\">\n")
+           .append("        <svg viewBox=\"0 0 ").append(width).append(' ').append(height)
+           .append("\" role=\"img\" class=\"cmp-chart\" preserveAspectRatio=\"xMidYMid meet\">\n");
+
+        // Horizontal gridlines with dual y-axis labels (5 ticks):
+        // left labels use the P99 scale, right labels use the Avg scale.
+        final int ticks = 5;
+        for (int t = 0; t <= ticks; t++) {
+            final double frac = (double) t / ticks;
+            final double y = padTop + plotHeight * (1.0 - frac);
+            svg.append("          <line x1=\"").append(padLeft).append("\" y1=\"").append(fmt(y))
+               .append("\" x2=\"").append(plotRight).append("\" y2=\"").append(fmt(y))
+               .append("\" class=\"grid\"/>\n");
+            svg.append("          <text x=\"").append(padLeft - 8).append("\" y=\"").append(fmt(y + 4))
+               .append("\" class=\"y-label\">").append(escape(fmt(p99Max * frac))).append("</text>\n");
+            svg.append("          <text x=\"").append(plotRight + 8).append("\" y=\"").append(fmt(y + 4))
+               .append("\" class=\"y-label-right\">").append(escape(fmt(avgMax * frac))).append("</text>\n");
+        }
+
+        // Axes: left (P99), bottom, and right (Avg).
+        svg.append("          <line x1=\"").append(padLeft).append("\" y1=\"").append(padTop)
+           .append("\" x2=\"").append(padLeft).append("\" y2=\"").append(plotBottom)
+           .append("\" class=\"axis\"/>\n");
+        svg.append("          <line x1=\"").append(padLeft).append("\" y1=\"").append(plotBottom)
+           .append("\" x2=\"").append(plotRight).append("\" y2=\"").append(plotBottom)
+           .append("\" class=\"axis\"/>\n");
+        svg.append("          <line x1=\"").append(plotRight).append("\" y1=\"").append(padTop)
+           .append("\" x2=\"").append(plotRight).append("\" y2=\"").append(plotBottom)
+           .append("\" class=\"axis\"/>\n");
+
+        // Y-axis titles: left = P99 latency, right = Avg latency.
+        final int titleY = padTop + plotHeight / 2;
+        final int leftTitleX = 18;
+        svg.append("          <text x=\"").append(leftTitleX).append("\" y=\"").append(titleY)
+           .append("\" class=\"axis-title\" transform=\"rotate(-90 ").append(leftTitleX).append(' ')
+           .append(titleY).append(")\">P99 latency</text>\n");
+        final int rightTitleX = width - 8;
+        svg.append("          <text x=\"").append(rightTitleX).append("\" y=\"").append(titleY)
+           .append("\" class=\"axis-title\" transform=\"rotate(90 ").append(rightTitleX).append(' ')
+           .append(titleY).append(")\">Avg latency</text>\n");
+
+        // X-axis method labels (rotated to avoid overlap).
+        for (int i = 0; i < n; i++) {
+            final double x = xStart + step * i;
+            final double labelY = plotBottom + 14;
+            svg.append("          <text x=\"").append(fmt(x)).append("\" y=\"").append(fmt(labelY))
+               .append("\" class=\"x-label\" transform=\"rotate(35 ").append(fmt(x)).append(' ')
+               .append(fmt(labelY)).append(")\">").append(escape(methods.get(i))).append("</text>\n");
+        }
+
+        // P99 bars (left axis), grouped per method: S3 left, Client right.
+        svg.append(renderBars(s3P99, csP99, step, xStart, padTop, plotHeight, plotBottom, p99Max));
+
+        // Avg lines (right axis), drawn on top of the bars.
+        svg.append(renderSeries(s3Avg, step, xStart, padTop, plotHeight, avgMax, S3_COLOR));
+        svg.append(renderSeries(csAvg, step, xStart, padTop, plotHeight, avgMax, CLIENT_COLOR));
+
+        svg.append("        </svg>\n");
+
+        // Legend: color = approach; bar = P99, line = Avg.
+        svg.append("        <div class=\"legend\">\n")
+           .append("          <span class=\"legend-item\"><span class=\"swatch\" style=\"background:")
+           .append(S3_COLOR).append("\"></span>").append(escape(S3_SELECT_LABEL)).append("</span>\n")
+           .append("          <span class=\"legend-item\"><span class=\"swatch\" style=\"background:")
+           .append(CLIENT_COLOR).append("\"></span>").append(escape(CLIENT_SIDE_LABEL)).append("</span>\n")
+           .append("          <span class=\"legend-item\"><span class=\"glyph-bar\"></span>Bar = P99</span>\n")
+           .append("          <span class=\"legend-item\"><span class=\"glyph-line\"></span>Line = Avg</span>\n")
+           .append("        </div>\n")
+           .append("      </div>\n");
+
+        return svg.toString();
+    }
+
+    /*
+     * Renders one series as a polyline through the defined points plus a circle
+     * marker at each point. Missing values (NaN) break the line into segments.
+     */
+    private static String renderSeries(final double[] vals,
+                                       final double step,
+                                       final double xStart,
+                                       final int padTop,
+                                       final int plotHeight,
+                                       final double max,
+                                       final String color) {
+        final StringBuilder out = new StringBuilder();
+        final StringBuilder segment = new StringBuilder();
+        final StringBuilder points = new StringBuilder();
+        for (int i = 0; i < vals.length; i++) {
+            if (Double.isNaN(vals[i])) {
+                if (segment.length() > 0) {
+                    out.append("          <polyline class=\"series\" points=\"").append(segment)
+                       .append("\" style=\"stroke:").append(color).append("\"/>\n");
+                    segment.setLength(0);
+                }
+                continue;
+            }
+            final double x = xStart + step * i;
+            final double y = padTop + plotHeight * (1.0 - vals[i] / max);
+            if (segment.length() > 0) {
+                segment.append(' ');
+            }
+            segment.append(fmt(x)).append(',').append(fmt(y));
+            points.append("          <circle cx=\"").append(fmt(x)).append("\" cy=\"").append(fmt(y))
+                  .append("\" r=\"4\" style=\"fill:").append(color).append("\">")
+                  .append("<title>").append(escape(fmt(vals[i]))).append("</title></circle>\n");
+        }
+        if (segment.length() > 0) {
+            out.append("          <polyline class=\"series\" points=\"").append(segment)
+               .append("\" style=\"stroke:").append(color).append("\"/>\n");
+        }
+        out.append(points);
+        return out.toString();
+    }
+
+    /*
+     * Renders grouped P99 bars for one EventCount group: two bars per method
+     * (S3 Select on the left, Client-Side Select on the right), scaled to the
+     * left (P99) axis. Missing values (NaN) are skipped.
+     */
+    private static String renderBars(final double[] s3P99,
+                                     final double[] csP99,
+                                     final double step,
+                                     final double xStart,
+                                     final int padTop,
+                                     final int plotHeight,
+                                     final int plotBottom,
+                                     final double max) {
+        final double barWidth = 15.0;
+        final double gap = 2.0;
+        final StringBuilder out = new StringBuilder();
+        for (int i = 0; i < s3P99.length; i++) {
+            final double center = xStart + step * i;
+            out.append(bar(center - barWidth - gap / 2.0, barWidth, s3P99[i],
+                    padTop, plotHeight, plotBottom, max, S3_COLOR));
+            out.append(bar(center + gap / 2.0, barWidth, csP99[i],
+                    padTop, plotHeight, plotBottom, max, CLIENT_COLOR));
+        }
+        return out.toString();
+    }
+
+    /*
+     * Renders a single P99 bar. Semi-transparent so the Avg lines drawn on top
+     * stay readable. Returns "" for a missing (NaN) value.
+     */
+    private static String bar(final double x,
+                              final double barWidth,
+                              final double value,
+                              final int padTop,
+                              final int plotHeight,
+                              final int plotBottom,
+                              final double max,
+                              final String color) {
+        if (Double.isNaN(value)) {
+            return "";
+        }
+        final double y = padTop + plotHeight * (1.0 - value / max);
+        final double h = plotBottom - y;
+        return "          <rect x=\"" + fmt(x) + "\" y=\"" + fmt(y)
+                + "\" width=\"" + fmt(barWidth) + "\" height=\"" + fmt(h)
+                + "\" fill=\"" + color + "\" fill-opacity=\"0.35\">"
+                + "<title>" + escape(fmt(value)) + "</title></rect>\n";
+    }
+
+    private static String fmt(final double value) {
+        if (value == Math.rint(value) && !Double.isInfinite(value)) {
+            return Long.toString((long) value);
+        }
+        return String.format(Locale.ROOT, "%.2f", value);
     }
 
     // ---- helpers ---------------------------------------------------------
@@ -387,6 +654,25 @@ public class HTMLReporter {
             + "  table.cmp tbody td { text-align: center; }\n"
             + "  table.cmp tbody td:first-child { text-align: left; }\n"
             + "  td.win { font-weight: 700; }\n"
+            + "  .chart { padding: 1rem 1.25rem 0.5rem; border-bottom: 1px solid var(--border); }\n"
+            + "  .cmp-chart { width: 100%; height: auto; display: block; }\n"
+            + "  .cmp-chart .grid { stroke: var(--border); stroke-width: 1; }\n"
+            + "  .cmp-chart .axis { stroke: #000; stroke-width: 1.5; }\n"
+            + "  .cmp-chart .series { fill: none; stroke-width: 2.5;\n"
+            + "    stroke-linejoin: round; stroke-linecap: round; }\n"
+            + "  .cmp-chart .y-label { fill: #000; font-size: 11px; text-anchor: end;\n"
+            + "    font-variant-numeric: tabular-nums; }\n"
+            + "  .cmp-chart .y-label-right { fill: #000; font-size: 11px; text-anchor: start;\n"
+            + "    font-variant-numeric: tabular-nums; }\n"
+            + "  .cmp-chart .x-label { fill: #000; font-size: 11px; text-anchor: start; }\n"
+            + "  .cmp-chart .axis-title { fill: #000; font-size: 12px; font-weight: 700; text-anchor: middle; }\n"
+            + "  .legend { display: flex; gap: 1.5rem; justify-content: center;\n"
+            + "    padding: 0.25rem 0 0.75rem; font-size: 0.85rem; color: var(--text); }\n"
+            + "  .legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }\n"
+            + "  .legend .swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }\n"
+            + "  .legend .glyph-bar { width: 13px; height: 13px; border-radius: 2px; display: inline-block;\n"
+            + "    background: repeating-linear-gradient(45deg, #94a3b8, #94a3b8 3px, #cbd5e1 3px, #cbd5e1 6px); }\n"
+            + "  .legend .glyph-line { width: 16px; height: 0; border-top: 3px solid #94a3b8; display: inline-block; }\n"
             + "</style>\n"
             + "</head>\n"
             + "<body>\n"
