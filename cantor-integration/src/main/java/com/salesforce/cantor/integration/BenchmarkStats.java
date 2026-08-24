@@ -3,13 +3,19 @@ package com.salesforce.cantor.integration;
 import java.util.*;
 
 public class BenchmarkStats {
+    private final int eventCount;
     private final String name;
     private final List<Long> durationsSorted;
 
-    public BenchmarkStats(final String name, final List<Long> durations) {
+    public BenchmarkStats(final int eventCount, final String name, final List<Long> durations) {
+        this.eventCount = eventCount;
         this.name = name;
         this.durationsSorted = new ArrayList<>(durations);
         Collections.sort(this.durationsSorted);
+    }
+
+    public int getEventCount() {
+        return eventCount;
     }
 
     public String getName() {
