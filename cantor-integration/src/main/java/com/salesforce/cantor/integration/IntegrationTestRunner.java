@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2020, Salesforce.com, Inc.
+ * All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+ */
+
 package com.salesforce.cantor.integration;
 
 import com.salesforce.cantor.Cantor;
@@ -40,7 +47,7 @@ public class IntegrationTestRunner {
 
             List<BenchmarkStats> stats = new ArrayList<>();
 
-            for (final int eventCount: eventCounts) {
+            for (final int eventCount : eventCounts) {
                 testClass.getMethod("setEventCount", int.class).invoke(null, eventCount);
 
                 logger.info("Running tests for eventCount={}", eventCount);
@@ -56,7 +63,7 @@ public class IntegrationTestRunner {
                 }
 
                 Map<String, List<Long>> methods = new LinkedHashMap<>();
-                for (TimingListener.TestTiming t: timingListener.getResults()) {
+                for (TimingListener.TestTiming t : timingListener.getResults()) {
                     String key = t.getMethodName();
                     List<Long> values = methods.get(key);
                     if (values == null) {
@@ -91,3 +98,4 @@ public class IntegrationTestRunner {
 
         System.exit(exitCode);
     }
+}
