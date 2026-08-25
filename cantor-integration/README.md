@@ -11,6 +11,14 @@ test harness.
 - `IntegrationTestRunner` : the main entry point; connects to the running Cantor server, runs the tests, saves the stats to CSV, and regenerates the HTML report
 - `ServerManager` : opens and holds the gRPC client connection to the Cantor server
 - `TimingListener` : a TestNG `ITestListener` that records each test method's duration and pass/fail/skip status
+- `IntegrationEventsTest` : holds the test cases; it stores the events once, waits until they're queryable, then runs the test cases below and asserts the expected result count:
+    - `getAll` : retrieves all stored events
+    - `getMetadata` : gets the value of the metadata key `metadata-key-0` for each event
+    - `getDimension` : queries events that have the dimension key `dimension-key-0`
+    - `getMetadataExactMatch` : queries events whose metadata key `user` has the value `user-0`
+    - `getMetadataPatternMatch` : queries events whose metadata key `region` has a value beginning with `us-west-1`
+    - `getDimensionExactMatch` : queries events whose dimension key `latency` has the value `0`
+    - `getDimensionRangeMatch` : queries events whose dimension key `latency` falls within an inclusive range (`0..1`)
 
 ## Running Integration Tests
 
