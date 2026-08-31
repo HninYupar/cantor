@@ -43,21 +43,20 @@ public class IntegrationTestRunner {
             serverManager.connect();
             Cantor client = serverManager.getClient();
 
-            final Class<?> testClass = Class.forName("com.salesforce.cantor.integration.IntegrationEventsTest");
-            testClass.getMethod("setCantor", Cantor.class).invoke(null, client);
+            IntegrationEventsTest.setCantor(client);
 
             final int[] eventCounts = {30, 300, 3000};
 
             List<BenchmarkStats> stats = new ArrayList<>();
 
             for (final int eventCount : eventCounts) {
-                testClass.getMethod("setEventCount", int.class).invoke(null, eventCount);
+                IntegrationEventsTest.setEventCount(eventCount);
 
                 logger.info("Running tests for eventCount={}", eventCount);
 
                 TimingListener timingListener = new TimingListener();
                 TestNG testng = new TestNG();
-                testng.setTestClasses(new Class<?>[]{testClass});
+                testng.setTestClasses(new Class<?>[]{IntegrationEventsTest.class});
                 testng.addListener(timingListener);
                 testng.run();
 
