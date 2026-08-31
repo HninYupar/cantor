@@ -17,6 +17,7 @@ services:
       - CANTOR_STORAGE_TYPE=${CANTOR_STORAGE_TYPE}
       - CANTOR_S3_BUCKET=${CANTOR_S3_BUCKET}
       - CANTOR_S3_SELECT_TYPE=${CANTOR_S3_SELECT_TYPE}
+      - CANTOR_S3_REGION=${CANTOR_S3_REGION}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

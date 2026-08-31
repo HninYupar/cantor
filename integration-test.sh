@@ -125,10 +125,8 @@ if [ "$STORAGE" == "mysql" ]; then
     sleep 10
 fi
 
-# Connect to S3 bucket if needed
-if [ "$STORAGE" == "s3" ]; then
-  export CANTOR_S3_BUCKET=bucket-place-holder
-fi
+export CANTOR_S3_BUCKET="${CANTOR_S3_BUCKET:-bucket-place-holder}"
+export CANTOR_S3_REGION="${CANTOR_S3_REGION:-us-west-2}"
 
 # Build cantor-server jar if it doesn't exist
 SERVER_JAR="${REPO_ROOT}/env/dockers/cantor/cantor-server.jar"
