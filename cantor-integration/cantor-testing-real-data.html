@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cantor Performance Metric</title>
+<style>
+  :root {
+    --bg: #f5f7fa; --card: #ffffff; --border: #e2e8f0; --text: #1a202c;
+    --muted: #64748b; --accent: #2563eb; --accent-soft: #eff6ff;
+    --head: #1e293b; --row-alt: #f8fafc;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2.5rem 1.5rem 4rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5; }
+  .container { max-width: 1000px; margin: 0 auto; }
+  header.page { text-align: center; margin-bottom: 1.5rem; }
+  header.page h1 { font-size: 2rem; font-weight: 700; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+  section.description { background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: var(--shadow); padding: 1.25rem 1.5rem; margin-bottom: 2.5rem; }
+  section.description p { margin: 0; color: var(--text); font-size: 0.95rem; }
+  section.description strong { color: var(--accent); }
+  h3.desc-title { font-size: 1rem; font-weight: 700; margin: 1.1rem 0 0.5rem; color: var(--head); }
+  ul.test-cases { margin: 0; padding-left: 1.25rem; }
+  ul.test-cases li { margin: 0.3rem 0; font-size: 0.9rem; color: var(--text); }
+  ul.test-cases code { background: var(--accent-soft); color: var(--accent);
+    font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 5px; font-size: 0.85rem; }
+  section.approach { margin-bottom: 3rem; }
+  h2.approach-title { font-size: 1.4rem; font-weight: 700; margin: 0 0 1.25rem;
+    padding-bottom: 0.5rem; border-bottom: 3px solid var(--accent); display: inline-block; }
+  .sub-approach { margin: 0 0 2rem; }
+  h3.sub-approach-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem;
+    color: var(--head); padding-bottom: 0.3rem; border-bottom: 2px solid var(--border);
+    display: inline-block; }
+  p.missing { color: #b91c1c; font-size: 0.9rem; }
+  .group { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: var(--shadow); margin-bottom: 1.5rem; overflow: hidden; }
+  .group h3 { font-size: 1.05rem; font-weight: 600; margin: 0; padding: 0.9rem 1.25rem;
+    background: var(--accent-soft); color: var(--head); border-bottom: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  thead th { background: var(--head); color: #fff; font-weight: 600; text-align: right;
+    padding: 0.6rem 0.9rem; white-space: nowrap; }
+  thead th:first-child { text-align: left; }
+  tbody td { padding: 0.55rem 0.9rem; text-align: right; border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums; }
+  tbody td:first-child { text-align: left; font-weight: 500; }
+  tbody tr:nth-child(even) { background: var(--row-alt); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--accent-soft); }
+  table.cmp thead th { text-align: center; border-left: 1px solid rgba(255,255,255,0.15); }
+  table.cmp thead th:first-child { text-align: left; border-left: none; }
+  table.cmp tbody td { text-align: center; }
+  table.cmp tbody td:first-child { text-align: left; }
+  td.win { font-weight: 700; }
+  .chart { padding: 1rem 1.25rem 0.5rem; border-bottom: 1px solid var(--border); }
+  .cmp-chart { width: 100%; height: auto; display: block; }
+  .cmp-chart .grid { stroke: var(--border); stroke-width: 1; }
+  .cmp-chart .axis { stroke: #000; stroke-width: 1.5; }
+  .cmp-chart .series { fill: none; stroke-width: 2.5;
+    stroke-linejoin: round; stroke-linecap: round; }
+  .cmp-chart .y-label { fill: #000; font-size: 11px; text-anchor: end;
+    font-variant-numeric: tabular-nums; }
+  .cmp-chart .y-label-right { fill: #000; font-size: 11px; text-anchor: start;
+    font-variant-numeric: tabular-nums; }
+  .cmp-chart .x-label { fill: #000; font-size: 11px; text-anchor: start; }
+  .cmp-chart .axis-title { fill: #000; font-size: 12px; font-weight: 700; text-anchor: middle; }
+  .legend { display: flex; gap: 1.5rem; justify-content: center;
+    padding: 0.25rem 0 0.75rem; font-size: 0.85rem; color: var(--text); }
+  .legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .legend .swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+  .legend .glyph-bar { width: 13px; height: 13px; border-radius: 2px; display: inline-block;
+    background: repeating-linear-gradient(45deg, #94a3b8, #94a3b8 3px, #cbd5e1 3px, #cbd5e1 6px); }
+  .legend .glyph-line { width: 16px; height: 0; border-top: 3px solid #94a3b8; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="page">
+    <h1>Cantor Performance Metric</h1>
+  </header>
+
+  <section class="description">
+    <p>This report compares the performance of CantorOnS3 using two approaches: S3 Select and Local Select. The tests run against real data collected by maiev, querying a fixed timeframe so both approaches read the same data. Performance is measured as the latency per operation, in milliseconds.</p>
+    <h3 class="desc-title">Test Cases</h3>
+    <ul class="test-cases">
+      <li><code>getAll</code> &mdash; retrieve all events for the selected instance</li>
+      <li><code>getMetadataExactMatch</code> &mdash; query events whose metadata contains a key with an exact value</li>
+      <li><code>getMetadataHighSelectivityMatch</code> &mdash; query events with an ultra-selective metadata value (matches very few events)</li>
+      <li><code>getMetadataNotEqualMatch</code> &mdash; query events whose metadata key does NOT equal a value</li>
+      <li><code>getMetadataPatternMatch</code> &mdash; query events whose metadata key matches a wildcard pattern</li>
+      <li><code>getMetadataKeyExists</code> &mdash; query events where a metadata key is present (any value)</li>
+      <li><code>getDimensionComparisonMatch</code> &mdash; query events whose dimension key satisfies a comparison (e.g. &gt;= a threshold)</li>
+      <li><code>getDimensionRangeMatch</code> &mdash; query events whose dimension key falls within an inclusive range</li>
+    </ul>
+  </section>
+
+  <section class="approach">
+    <h2 class="approach-title">Cantor on S3</h2>
+    <div class="sub-approach">
+      <h3 class="sub-approach-title">S3 Select</h3>
+    <div class="group">
+      <table>
+        <thead><tr><th>Method</th><th>Count</th><th>Sum</th><th>Avg</th><th>Min</th><th>Max</th><th>P50</th><th>P90</th><th>P95</th><th>P99</th></tr></thead>
+        <tbody>
+<tr><td>getAll</td><td>10</td><td>83154</td><td>8315.4</td><td>7948</td><td>8795</td><td>8209</td><td>8630</td><td>8795</td><td>8795</td></tr>
+<tr><td>getDimensionComparisonMatch</td><td>10</td><td>80363</td><td>8036.3</td><td>7928</td><td>8136</td><td>8007</td><td>8105</td><td>8136</td><td>8136</td></tr>
+<tr><td>getMetadataExactMatch</td><td>10</td><td>80395</td><td>8039.5</td><td>7873</td><td>8224</td><td>8011</td><td>8212</td><td>8224</td><td>8224</td></tr>
+<tr><td>getMetadataHighSelectivityMatch</td><td>10</td><td>84455</td><td>8445.5</td><td>7915</td><td>8941</td><td>8319</td><td>8921</td><td>8941</td><td>8941</td></tr>
+<tr><td>getMetadataKeyExists</td><td>10</td><td>78717</td><td>7871.7</td><td>7639</td><td>8291</td><td>7854</td><td>8039</td><td>8291</td><td>8291</td></tr>
+<tr><td>getMetadataNotEqualMatch</td><td>10</td><td>82341</td><td>8234.1</td><td>7947</td><td>8614</td><td>8170</td><td>8442</td><td>8614</td><td>8614</td></tr>
+<tr><td>getMetadataPatternMatch</td><td>10</td><td>80039</td><td>8003.9</td><td>7711</td><td>8678</td><td>7986</td><td>8111</td><td>8678</td><td>8678</td></tr>
+        </tbody>
+      </table>
+    </div>
+    </div>
+    <div class="sub-approach">
+      <h3 class="sub-approach-title">Local Select</h3>
+    <div class="group">
+      <table>
+        <thead><tr><th>Method</th><th>Count</th><th>Sum</th><th>Avg</th><th>Min</th><th>Max</th><th>P50</th><th>P90</th><th>P95</th><th>P99</th></tr></thead>
+        <tbody>
+<tr><td>getAll</td><td>10</td><td>81091</td><td>8109.1</td><td>7760</td><td>8489</td><td>8068</td><td>8235</td><td>8489</td><td>8489</td></tr>
+<tr><td>getDimensionComparisonMatch</td><td>10</td><td>80232</td><td>8023.2</td><td>7832</td><td>8365</td><td>7950</td><td>8160</td><td>8365</td><td>8365</td></tr>
+<tr><td>getMetadataExactMatch</td><td>10</td><td>79856</td><td>7985.6</td><td>7874</td><td>8209</td><td>7926</td><td>8050</td><td>8209</td><td>8209</td></tr>
+<tr><td>getMetadataHighSelectivityMatch</td><td>10</td><td>78172</td><td>7817.2</td><td>7509</td><td>8244</td><td>7672</td><td>8078</td><td>8244</td><td>8244</td></tr>
+<tr><td>getMetadataKeyExists</td><td>10</td><td>82624</td><td>8262.4</td><td>7804</td><td>8998</td><td>8207</td><td>8400</td><td>8998</td><td>8998</td></tr>
+<tr><td>getMetadataNotEqualMatch</td><td>10</td><td>80555</td><td>8055.5</td><td>7915</td><td>8177</td><td>7999</td><td>8158</td><td>8177</td><td>8177</td></tr>
+<tr><td>getMetadataPatternMatch</td><td>10</td><td>79715</td><td>7971.5</td><td>7719</td><td>8306</td><td>7898</td><td>8098</td><td>8306</td><td>8306</td></tr>
+        </tbody>
+      </table>
+    </div>
+    </div>
+    <div class="sub-approach">
+      <h3 class="sub-approach-title">S3 Select vs Client-Side Select</h3>
+    <div class="group">
+      <div class="chart">
+        <svg viewBox="0 0 780 340" role="img" class="cmp-chart" preserveAspectRatio="xMidYMid meet">
+          <line x1="90" y1="240" x2="690" y2="240" class="grid"/>
+          <text x="82" y="244" class="y-label">0</text>
+          <text x="698" y="244" class="y-label-right">0</text>
+          <line x1="90" y1="194.80" x2="690" y2="194.80" class="grid"/>
+          <text x="82" y="198.80" class="y-label">1799.60</text>
+          <text x="698" y="198.80" class="y-label-right">1689.10</text>
+          <line x1="90" y1="149.60" x2="690" y2="149.60" class="grid"/>
+          <text x="82" y="153.60" class="y-label">3599.20</text>
+          <text x="698" y="153.60" class="y-label-right">3378.20</text>
+          <line x1="90" y1="104.40" x2="690" y2="104.40" class="grid"/>
+          <text x="82" y="108.40" class="y-label">5398.80</text>
+          <text x="698" y="108.40" class="y-label-right">5067.30</text>
+          <line x1="90" y1="59.20" x2="690" y2="59.20" class="grid"/>
+          <text x="82" y="63.20" class="y-label">7198.40</text>
+          <text x="698" y="63.20" class="y-label-right">6756.40</text>
+          <line x1="90" y1="14" x2="690" y2="14" class="grid"/>
+          <text x="82" y="18" class="y-label">8998</text>
+          <text x="698" y="18" class="y-label-right">8445.50</text>
+          <line x1="90" y1="14" x2="90" y2="240" class="axis"/>
+          <line x1="90" y1="240" x2="690" y2="240" class="axis"/>
+          <line x1="690" y1="14" x2="690" y2="240" class="axis"/>
+          <text x="18" y="127" class="axis-title" transform="rotate(-90 18 127)">P99 latency</text>
+          <text x="772" y="127" class="axis-title" transform="rotate(90 772 127)">Avg latency</text>
+          <text x="120" y="254" class="x-label" transform="rotate(35 120 254)">getAll</text>
+          <text x="210" y="254" class="x-label" transform="rotate(35 210 254)">getDimensionComparisonMatch</text>
+          <text x="300" y="254" class="x-label" transform="rotate(35 300 254)">getMetadataExactMatch</text>
+          <text x="390" y="254" class="x-label" transform="rotate(35 390 254)">getMetadataHighSelectivityMatch</text>
+          <text x="480" y="254" class="x-label" transform="rotate(35 480 254)">getMetadataKeyExists</text>
+          <text x="570" y="254" class="x-label" transform="rotate(35 570 254)">getMetadataNotEqualMatch</text>
+          <text x="660" y="254" class="x-label" transform="rotate(35 660 254)">getMetadataPatternMatch</text>
+          <rect x="104" y="19.10" width="15" height="220.90" fill="#0066CC" fill-opacity="0.35"><title>8795</title></rect>
+          <rect x="121" y="26.78" width="15" height="213.22" fill="#6D8764" fill-opacity="0.35"><title>8489</title></rect>
+          <rect x="194" y="35.65" width="15" height="204.35" fill="#0066CC" fill-opacity="0.35"><title>8136</title></rect>
+          <rect x="211" y="29.90" width="15" height="210.10" fill="#6D8764" fill-opacity="0.35"><title>8365</title></rect>
+          <rect x="284" y="33.44" width="15" height="206.56" fill="#0066CC" fill-opacity="0.35"><title>8224</title></rect>
+          <rect x="301" y="33.82" width="15" height="206.18" fill="#6D8764" fill-opacity="0.35"><title>8209</title></rect>
+          <rect x="374" y="15.43" width="15" height="224.57" fill="#0066CC" fill-opacity="0.35"><title>8941</title></rect>
+          <rect x="391" y="32.94" width="15" height="207.06" fill="#6D8764" fill-opacity="0.35"><title>8244</title></rect>
+          <rect x="464" y="31.76" width="15" height="208.24" fill="#0066CC" fill-opacity="0.35"><title>8291</title></rect>
+          <rect x="481" y="14" width="15" height="226" fill="#6D8764" fill-opacity="0.35"><title>8998</title></rect>
+          <rect x="554" y="23.64" width="15" height="216.36" fill="#0066CC" fill-opacity="0.35"><title>8614</title></rect>
+          <rect x="571" y="34.62" width="15" height="205.38" fill="#6D8764" fill-opacity="0.35"><title>8177</title></rect>
+          <rect x="644" y="22.04" width="15" height="217.96" fill="#0066CC" fill-opacity="0.35"><title>8678</title></rect>
+          <rect x="661" y="31.38" width="15" height="208.62" fill="#6D8764" fill-opacity="0.35"><title>8306</title></rect>
+          <polyline class="series" points="120,17.48 210,24.95 300,24.86 390,14 480,29.35 570,19.66 660,25.82" style="stroke:#0066CC"/>
+          <circle cx="120" cy="17.48" r="4" style="fill:#0066CC"><title>8315.40</title></circle>
+          <circle cx="210" cy="24.95" r="4" style="fill:#0066CC"><title>8036.30</title></circle>
+          <circle cx="300" cy="24.86" r="4" style="fill:#0066CC"><title>8039.50</title></circle>
+          <circle cx="390" cy="14" r="4" style="fill:#0066CC"><title>8445.50</title></circle>
+          <circle cx="480" cy="29.35" r="4" style="fill:#0066CC"><title>7871.70</title></circle>
+          <circle cx="570" cy="19.66" r="4" style="fill:#0066CC"><title>8234.10</title></circle>
+          <circle cx="660" cy="25.82" r="4" style="fill:#0066CC"><title>8003.90</title></circle>
+          <polyline class="series" points="120,23.00 210,25.30 300,26.31 390,30.81 480,18.90 570,24.44 660,26.68" style="stroke:#6D8764"/>
+          <circle cx="120" cy="23.00" r="4" style="fill:#6D8764"><title>8109.10</title></circle>
+          <circle cx="210" cy="25.30" r="4" style="fill:#6D8764"><title>8023.20</title></circle>
+          <circle cx="300" cy="26.31" r="4" style="fill:#6D8764"><title>7985.60</title></circle>
+          <circle cx="390" cy="30.81" r="4" style="fill:#6D8764"><title>7817.20</title></circle>
+          <circle cx="480" cy="18.90" r="4" style="fill:#6D8764"><title>8262.40</title></circle>
+          <circle cx="570" cy="24.44" r="4" style="fill:#6D8764"><title>8055.50</title></circle>
+          <circle cx="660" cy="26.68" r="4" style="fill:#6D8764"><title>7971.50</title></circle>
+        </svg>
+        <div class="legend">
+          <span class="legend-item"><span class="swatch" style="background:#0066CC"></span>S3 Select</span>
+          <span class="legend-item"><span class="swatch" style="background:#6D8764"></span>Client-Side Select</span>
+          <span class="legend-item"><span class="glyph-bar"></span>Bar = P99</span>
+          <span class="legend-item"><span class="glyph-line"></span>Line = Avg</span>
+        </div>
+      </div>
+      <table class="cmp">
+        <thead>
+          <tr><th rowspan="2">Method</th><th colspan="2">Avg</th><th colspan="2">P50</th><th colspan="2">P90</th><th colspan="2">P99</th></tr>
+          <tr><th>S3</th><th>Client</th><th>S3</th><th>Client</th><th>S3</th><th>Client</th><th>S3</th><th>Client</th></tr>
+        </thead>
+        <tbody>
+<tr><td>getAll</td><td>8315.4</td><td class="win">8109.1</td><td>8209</td><td class="win">8068</td><td>8630</td><td class="win">8235</td><td>8795</td><td class="win">8489</td></tr>
+<tr><td>getDimensionComparisonMatch</td><td>8036.3</td><td class="win">8023.2</td><td>8007</td><td class="win">7950</td><td class="win">8105</td><td>8160</td><td class="win">8136</td><td>8365</td></tr>
+<tr><td>getMetadataExactMatch</td><td>8039.5</td><td class="win">7985.6</td><td>8011</td><td class="win">7926</td><td>8212</td><td class="win">8050</td><td>8224</td><td class="win">8209</td></tr>
+<tr><td>getMetadataHighSelectivityMatch</td><td>8445.5</td><td class="win">7817.2</td><td>8319</td><td class="win">7672</td><td>8921</td><td class="win">8078</td><td>8941</td><td class="win">8244</td></tr>
+<tr><td>getMetadataKeyExists</td><td class="win">7871.7</td><td>8262.4</td><td class="win">7854</td><td>8207</td><td class="win">8039</td><td>8400</td><td class="win">8291</td><td>8998</td></tr>
+<tr><td>getMetadataNotEqualMatch</td><td>8234.1</td><td class="win">8055.5</td><td>8170</td><td class="win">7999</td><td>8442</td><td class="win">8158</td><td>8614</td><td class="win">8177</td></tr>
+<tr><td>getMetadataPatternMatch</td><td>8003.9</td><td class="win">7971.5</td><td>7986</td><td class="win">7898</td><td>8111</td><td class="win">8098</td><td>8678</td><td class="win">8306</td></tr>
+        </tbody>
+      </table>
+    </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
