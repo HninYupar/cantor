@@ -40,4 +40,5 @@ public class Constants {
     public static final String CANTOR_S3_PROXY_PORT = "proxy.port";
     public static final String CANTOR_S3_ENDPOINT_OVERRIDE = "endpoint.override";
     public static final String CANTOR_S3_SETS_TYPE = "sets.type";
+    public static final String CANTOR_S3_SELECT_TYPE = "select.type";
 }

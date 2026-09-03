@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Copyright (c) 2020, Salesforce.com, Inc.
+  ~ All rights reserved.
+  ~ SPDX-License-Identifier: BSD-3-Clause
+  ~ For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>cantor-parent</artifactId>
+        <groupId>com.salesforce.cantor</groupId>
+        <version>0.5.25-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>cantor-integration</artifactId>
+    <name>cantor-integration</name>
+    <packaging>jar</packaging>
+
+    <description>Integration test harness for Cantor</description>
+
+    <dependencies>
+        <!--Cantor gRPC client-->
+        <dependency>
+            <groupId>com.salesforce.cantor</groupId>
+            <artifactId>cantor-grpc-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!--Cantor common test classes-->
+        <dependency>
+            <groupId>com.salesforce.cantor</groupId>
+            <artifactId>cantor-common</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+        </dependency>
+
+        <!--Cantor server-->
+        <dependency>
+            <groupId>com.salesforce.cantor</groupId>
+            <artifactId>cantor-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- TestNG -->
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>${testng.version}</version>
+            <!-- Override the managed 'test' scope from the root pom:
+                 our IntegrationTestRunner lives in src/main/java and drives
+                 TestNG programmatically, so it must be on the compile classpath. -->
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>html-report</id>
+                        <configuration>
+                            <mainClass>com.salesforce.cantor.integration.HTMLReporter</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--ASSEMBLY: build a self-contained, executable jar so the test
+                harness can run via `java -jar` without a Maven build at runtime-->
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.5.3</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.salesforce.cantor.integration.IntegrationTestRunner</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptors>
+                        <descriptor>src/assembly/test-jar-with-dependencies.xml</descriptor>
+                    </descriptors>
+                    <finalName>cantor-integration</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

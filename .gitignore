@@ -2,6 +2,12 @@
 target/
 logs
 
+# TestNG report output (regenerated on every run)
+test-output/
+
+# benchmark reports
+cantor-integration/reports/
+
 # Package Files #
 *.war
 *.ear

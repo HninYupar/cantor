@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  cantor-server:
+    build:
+      context: ../env/dockers/cantor
+      dockerfile: Dockerfile
+    container_name: cantor-server
+    ports:
+      - "7443:7443"
+    networks:
+      - cantor-network
+    volumes:
+      - ${CANTOR_CONFIG_FILE:-../env/dockers/cantor/cantor-server.conf}:/home/cantor/cantor-server.conf:ro
+      - ~/.aws/credentials:/root/.aws/credentials:ro
+    environment:
+      - CANTOR_STORAGE_TYPE=${CANTOR_STORAGE_TYPE}
+      - CANTOR_S3_BUCKET=${CANTOR_S3_BUCKET}
+      - CANTOR_S3_SELECT_TYPE=${CANTOR_S3_SELECT_TYPE}
+      - CANTOR_S3_REGION=${CANTOR_S3_REGION}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  cantor-client:
+    build:
+      context: ..
+      dockerfile: cantor-integration/Dockerfile
+    container_name: cantor-client
+    depends_on:
+      - cantor-server
+    environment:
+      - CANTOR_SERVER_HOST=cantor-server
+      - CANTOR_SERVER_PORT=7443
+    networks:
+      - cantor-network
+    volumes:
+      - ./reports:/cantor/cantor-integration/reports
+
+networks:
+  cantor-network:
+    driver: bridge

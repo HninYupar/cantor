@@ -115,10 +115,12 @@
         <module>cantor-h2</module>
         <module>cantor-mysql</module>
         <module>cantor-s3</module>
+        <module>cantor-s3-with-selector</module>
         <module>cantor-misc</module>
         <module>cantor-metrics</module>
         <module>cantor-server</module>
         <module>cantor-http-server</module>
+        <module>cantor-integration</module>
     </modules>
 
     <dependencyManagement>
